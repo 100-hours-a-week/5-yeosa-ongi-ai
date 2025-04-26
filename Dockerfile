@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir git+https://github.com/openai/CLIP.git
 
 COPY . .
 
-COPY clip_model/ViT-B-32.pt /root/.cache/clip/ViT-B-32.pt
+# COPY clip_model/ViT-B-32.pt /root/.cache/clip/ViT-B-32.pt
 
 ENV PYTHONPATH=/app
 

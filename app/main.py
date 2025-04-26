@@ -43,7 +43,7 @@ def embed(req: ImageRequest):
     
 @app.post("/api/albums/categories", status_code=201)
 def categorize(req: ImageRequest):
-    data = torch.load("category_features.pt", weights_only=True)
+    data = torch.load("/Users/images/category_features.pt", weights_only=True)
     categories = data["categories"]
     text_features = data["text_features"]
     image_names = req.images
