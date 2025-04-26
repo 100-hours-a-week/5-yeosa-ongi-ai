@@ -1,0 +1,12 @@
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS system files
+.DS_Store
+
+# Local image files (not to be pushed)
+images/
+clip_model/
