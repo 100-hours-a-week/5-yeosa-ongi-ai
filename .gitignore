@@ -10,3 +10,8 @@ __pycache__/
 # Local image files (not to be pushed)
 images/
 clip_model/
+
+Users/
+
+# Virtual environment
+.venv/

@@ -29,9 +29,13 @@ aesthetic_regressor = None
 
 @app.on_event("startup")
 def load():
-    global clip_model, clip_preprocess, aesthetic_regressor, images
+    global clip_model, clip_preprocess, aesthetic_regressor
     clip_model, clip_preprocess = load_clip_model()
     aesthetic_regressor = loader_aesthetic_regressor()
+
+@app.get("/")
+def ping():
+    return {"ping": 'success'}
 
 @app.post("/api/albums/embedding", status_code=201)
 def embed(req: ImageRequest):
