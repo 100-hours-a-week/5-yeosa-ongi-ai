@@ -8,7 +8,7 @@ from fastapi import Request
 
 def categorize_controller(req: ImageRequest, request: Request):
     data = torch.load("Users/images/category_features.pt", weights_only=True)
-    categories = data["categories"]
+    translated_categories = data["translated_categories"]
     text_features = data["text_features"]
 
     image_names = req.images
@@ -26,7 +26,7 @@ def categorize_controller(req: ImageRequest, request: Request):
     image_features /= image_features.norm(dim=-1, keepdim=True)
 
     categorized = categorize_images(
-        image_features.cpu(), image_names, text_features.cpu(), categories
+        image_features.cpu(), image_names, text_features.cpu(), translated_categories
     )
 
     response = [
