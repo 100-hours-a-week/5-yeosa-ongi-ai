@@ -15,3 +15,13 @@ Users/
 
 # Virtual environment
 .venv/
+
+app/model/insight-face-v3.pt
+.python-version
+
+# InsightFace_PyTorch
+.idea/
+runs/
+data/CASIA-WebFace
+data/lfw_funneled
+*.tar
