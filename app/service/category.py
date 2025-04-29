@@ -1,7 +1,5 @@
 import torch
 from collections import Counter, defaultdict
-from app.core.cache import get_cached_embedding
-
 
 def compute_similarity(
     image_features: torch.Tensor, text_features: torch.Tensor, topk: int
@@ -33,7 +31,7 @@ def assign_primary_category(tags, top_tags):
     for tag in tags:
         if tag in top_tags:
             return tag
-    return "others"
+    return "기타"
 
 
 def group_images_by_category(filtered_results, top_tags):
