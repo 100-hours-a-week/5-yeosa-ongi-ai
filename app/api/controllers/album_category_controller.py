@@ -7,7 +7,7 @@ from fastapi import Request
 
 
 def categorize_controller(req: ImageRequest, request: Request):
-    data = torch.load("Users/images/category_features.pt", weights_only=True)
+    data = torch.load("app/model/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
     text_features = data["text_features"]
 

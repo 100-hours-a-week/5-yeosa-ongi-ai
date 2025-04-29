@@ -4,6 +4,7 @@ from app.api.endpoints import (
     album_duplicate_router,
     album_embedding_router,
     album_score_router,
+    album_people_router,
 )
 
 api_router = APIRouter()
@@ -25,4 +26,7 @@ api_router.include_router(
 )
 api_router.include_router(
     album_score_router.router, prefix="/api/albums/score", tags=["scores"]
+)
+api_router.include_router(
+    album_people_router.router, prefix="/api/albums/people", tags=["people"]
 )
