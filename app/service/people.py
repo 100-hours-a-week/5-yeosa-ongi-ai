@@ -86,4 +86,5 @@ def cluster_faces(
             result[f"person_{label}"].add(name)
 
     # 반환: 리스트로 변환
-    return [list(names) for names in result.values()]
+    sorted_result = sorted(result.values(), key=lambda names: len(names), reverse=True)
+    return [list(names) for names in sorted_result]
