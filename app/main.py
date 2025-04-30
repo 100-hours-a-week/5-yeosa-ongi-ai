@@ -33,9 +33,4 @@ def load():
     app.state.yolo_detector = yolo_detector
 
 
-@app.get("/")
-def ping():
-    return {"ping": "success"}
-
-
 app.include_router(api_router)
