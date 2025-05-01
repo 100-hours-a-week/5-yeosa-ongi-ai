@@ -16,3 +16,6 @@ class LocalImageLoader(BaseImageLoader):
             Image.open(os.path.join(self.image_dir, filename)).convert("RGB")
             for filename in filenames
         ]
+    
+def get_image_loader():
+    return LocalImageLoader()
