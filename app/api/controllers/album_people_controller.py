@@ -4,11 +4,11 @@ from app.service.people import cluster_faces
 from fastapi import Request
 
 
-def people_controller(req: ImageRequest, request: Request):
+async def people_controller(req: ImageRequest, request: Request):
     filenames = req.images
     
     image_loader = request.app.state.image_loader
-    images = image_loader.load_images(filenames)
+    images = await image_loader.load_images(filenames)
 
     arcface_model = request.app.state.arcface_model
     yolo_detector = request.app.state.yolo_detector
