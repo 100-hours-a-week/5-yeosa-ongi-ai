@@ -13,7 +13,7 @@ from app.model.clip_loader import load_clip_model
 from app.model.aesthetic_regressor import loader_aesthetic_regressor
 from app.model.arcface_loader import load_arcface_model
 from app.model.yolo_detector_loader import load_yolo_detector
-from app.utils.image_loader import GCSImageLoader, LocalImageLoader
+from app.utils.image_loader import get_image_loader
 from app.config.settings import IMAGE_MODE
 from app.api import api_router
 
@@ -33,11 +33,7 @@ def load():
     app.state.aesthetic_regressor = aesthetic_regressor
     app.state.arcface_model = arcface_model
     app.state.yolo_detector = yolo_detector
-
-    if IMAGE_MODE == "gcs":
-        app.state.image_loader = GCSImageLoader()
-    else:
-        app.state.image_loader = LocalImageLoader()
+    app.state.image_loader = get_image_loader(IMAGE_MODE)
 
 
 app.include_router(api_router)
