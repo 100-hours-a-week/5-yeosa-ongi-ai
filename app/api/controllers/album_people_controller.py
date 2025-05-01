@@ -7,7 +7,7 @@ from fastapi import Request
 def people_controller(req: ImageRequest, request: Request):
     filenames = req.images
     
-    image_loader = get_image_loader()
+    image_loader = request.app.state.image_loader
     images = image_loader.load_images(filenames)
 
     arcface_model = request.app.state.arcface_model

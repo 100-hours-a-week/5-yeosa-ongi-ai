@@ -7,7 +7,7 @@ from fastapi import Request
 def embed_controller(req: ImageRequest, request: Request):
     filenames = req.images
 
-    image_loader = get_image_loader()
+    image_loader = request.app.state.image_loader
     images = image_loader.load_images(filenames)
 
     clip_model = request.app.state.clip_model
