@@ -25,3 +25,6 @@ runs/
 data/CASIA-WebFace
 data/lfw_funneled
 *.tar
+
+ongi-test-4247101f2463.json
+.env
