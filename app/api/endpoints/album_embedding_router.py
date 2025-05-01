@@ -6,5 +6,5 @@ router = APIRouter(tags=["embedding"])
 
 
 @router.post("/", status_code=201)
-def embed(req: ImageRequest, request: Request):
-    return embed_controller(req, request)
+async def embed(req: ImageRequest, request: Request):
+    return await embed_controller(req, request)
