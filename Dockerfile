@@ -11,6 +11,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN pip install --no-cache-dir git+https://github.com/openai/CLIP.git
+RUN wget -O app/model/insight-face-v3.pt \
+    https://github.com/foamliu/InsightFace-v3/releases/download/v1.0/insight-face-v3.pt
 
 COPY . .
 
