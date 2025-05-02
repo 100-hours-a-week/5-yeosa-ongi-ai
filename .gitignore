@@ -16,7 +16,7 @@ Users/
 # Virtual environment
 .venv/
 
-app/model/insight-face-v3.pt
+**/insight-face-v3.pt
 .python-version
 
 # InsightFace_PyTorch
