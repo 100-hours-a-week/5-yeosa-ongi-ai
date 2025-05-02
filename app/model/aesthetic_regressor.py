@@ -6,6 +6,7 @@ class AestheticRegressor(torch.nn.Module):
     def __init__(self, dim=512):
         super().__init__()
         self.linear = torch.nn.Linear(dim, 1)
+        self.load_state_dict(torch.load("app/model/aesthetic_regressor.pth", weights_only=True))
 
     def forward(self, x):
         return self.linear(x).squeeze(1)  # [N]
