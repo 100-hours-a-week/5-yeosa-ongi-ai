@@ -23,4 +23,4 @@ def quality_controller(req: ImageRequest, request: Request):
 
     result = get_low_quality_images(image_names, image_features)
 
-    return {"message": "success", "images": result}
+    return {"message": "success", "data": result}
