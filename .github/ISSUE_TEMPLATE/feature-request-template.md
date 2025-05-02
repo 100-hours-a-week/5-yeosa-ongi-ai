@@ -2,7 +2,7 @@
 name: Feature-Request-Template
 about: Feature-Request-Template
 title: ''
-labels: Suggestion
+labels: Feature
 assignees: ''
 
 ---
