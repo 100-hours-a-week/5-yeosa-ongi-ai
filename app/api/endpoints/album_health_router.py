@@ -8,6 +8,6 @@ router = APIRouter(tags=["health"])
 def health_check():
     return {
         "status": "ok",
-        "message": "Service is healthy",
+        "message": "ONGI AI Server is healthy",
         "version": "1.0.0"
     }
