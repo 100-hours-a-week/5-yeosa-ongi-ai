@@ -9,7 +9,7 @@ class AestheticRegressor(torch.nn.Module):
         self.load_state_dict(torch.load("app/model/aesthetic_regressor.pth"))
 
     def forward(self, x):
-        return self.linear(x).squeeze(-1)
+        return self.linear(x).squeeze(1)
 
 def loader_aesthetic_regressor():
     global _aesthetic_regressor
