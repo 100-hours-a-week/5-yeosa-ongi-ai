@@ -5,11 +5,11 @@ _aesthetic_regressor = None
 class AestheticRegressor(torch.nn.Module):
     def __init__(self, dim=512):
         super().__init__()
-        self.linear = torch.nn.Linear(dim, 1)
+        self.fc = torch.nn.Linear(dim, 1)
         self.load_state_dict(torch.load("app/model/aesthetic_regressor.pth"))
 
     def forward(self, x):
-        return self.linear(x).squeeze(1)
+        return self.fc(x).squeeze(1)
 
 def loader_aesthetic_regressor():
     global _aesthetic_regressor
