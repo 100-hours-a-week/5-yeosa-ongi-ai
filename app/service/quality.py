@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from typing import List, Dict
 
-
 def compute_pairwise_score(image_features, text_pair):
     """
     이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해
@@ -56,7 +55,7 @@ def load_clip_iqa_prompt_features(path: str):
             fields (List[str]): 각 프롬프트 쌍에 해당하는 필드 이름
     """
     data = torch.load(path)
-    return data["prompt_pairs"], data["text_features"], data["fields"]
+    return data["text_features"], data["fields"]
 
 
 def evaluate_dual_threshold(scores, field_a, field_b,
@@ -97,7 +96,7 @@ def evaluate_dual_threshold(scores, field_a, field_b,
 
     return results
 
-def get_low_quality_images(image_names, pass_results):
+def get_low_quality_images(image_names, image_features):
     """
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
 
@@ -108,4 +107,14 @@ def get_low_quality_images(image_names, pass_results):
     반환:
         List[str]: 저품질 이미지 이름 리스트
     """
-    return [name for name, result in zip(image_names, pass_results) if result != "both"]
+    text_features, fields = load_clip_iqa_prompt_features('app/model/clip_iqa_prompt_features.pt')
+    scores = get_field_scores(image_features, text_features, fields)
+    results = evaluate_dual_threshold(
+        scores,
+        field_a="sharp",
+        field_b="good",
+        weight_b=0.25,
+        threshold_combined=0.490,
+        threshold_a=0.488
+    )
+    return [name for name, result in zip(image_names, results) if result != "both"]
