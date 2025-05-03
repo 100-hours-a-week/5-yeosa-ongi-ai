@@ -1,13 +1,13 @@
 import torch
 import torch.nn.functional as F
-from typing import List, Dict
+
 from app.utils.logging_decorator import log_exception
+
 
 @log_exception
 def compute_pairwise_score(image_features, text_pair):
     """
-    이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해
-    softmax를 통해 positive 점수를 계산합니다.
+    이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해 softmax를 통해 positive 점수를 계산합니다.
 
     인자:
         image_features (Tensor): [B, 512] 이미지 피처 (정규화되어 있다고 가정)
@@ -15,13 +15,19 @@ def compute_pairwise_score(image_features, text_pair):
 
     반환:
         Tensor: [B] 각 이미지에 대한 positive softmax 점수
+
     """
-    sim = image_features @ text_pair.T         # 코사인 유사도 [B, 2]
-    probs = F.softmax(sim, dim=-1)             # softmax 적용
-    return probs[:, 0]                         # positive 클래스의 확률 반환
+    sim = image_features @ text_pair.T  # 코사인 유사도 [B, 2]
+    probs = F.softmax(sim, dim=-1)  # softmax 적용
+    return probs[:, 0]  # positive 클래스의 확률 반환
+
 
 @log_exception
-def get_field_scores(image_features: torch.Tensor, text_features: torch.Tensor, fields: List[str]) -> List[Dict[str, float]]:
+def get_field_scores(
+    image_features: torch.Tensor,
+    text_features: torch.Tensor,
+    fields: list[str],
+) -> list[dict[str, float]]:
     """
     각 이미지에 대해 모든 필드의 positive 점수를 계산합니다.
 
@@ -32,16 +38,24 @@ def get_field_scores(image_features: torch.Tensor, text_features: torch.Tensor, 
 
     반환:
         List[Dict[str, float]]: 각 이미지별 필드 이름 → 점수 딕셔너리
+
     """
     B, N = image_features.size(0), text_features.size(0)
-    scores = [dict() for _ in range(B)]  # 이미지별 점수를 저장할 딕셔너리 리스트
+    scores = [
+        dict() for _ in range(B)
+    ]  # 이미지별 점수를 저장할 딕셔너리 리스트
 
     for i in range(N):  # 필드별로
-        pos_scores = compute_pairwise_score(image_features, text_features[i])  # [B]
+        pos_scores = compute_pairwise_score(
+            image_features, text_features[i]
+        )  # [B]
         for b in range(B):
-            scores[b][fields[i]] = pos_scores[b].item()  # field 이름 → 점수로 저장
+            scores[b][fields[i]] = pos_scores[
+                b
+            ].item()  # field 이름 → 점수로 저장
 
     return scores
+
 
 @log_exception
 def load_clip_iqa_prompt_features(path: str):
@@ -56,15 +70,24 @@ def load_clip_iqa_prompt_features(path: str):
             prompt_pairs (List[Tuple[str, str]]): positive/negative 텍스트 프롬프트 쌍
             text_features (Tensor): [N, 2, 512] 텍스트 피처 쌍
             fields (List[str]): 각 프롬프트 쌍에 해당하는 필드 이름
+
     """
     data = torch.load(path)
     return data["text_features"], data["fields"]
 
+
 @log_exception
-def evaluate_dual_threshold(scores, field_a, field_b,
-                             weight_b=0.25, threshold_combined=0.490, threshold_a=0.488):
+def evaluate_dual_threshold(
+    scores,
+    field_a,
+    field_b,
+    weight_b=0.25,
+    threshold_combined=0.490,
+    threshold_a=0.488,
+):
     """
     두 가지 기준을 바탕으로 각 이미지의 통과 여부를 판별합니다:
+
     - field_a는 단일 기준을 통과해야 함 (ex. good ≥ 0.488)
     - field_a와 field_b의 가중 평균은 통합 기준을 통과해야 함 (ex. good+sharp ≥ 0.490)
 
@@ -78,6 +101,7 @@ def evaluate_dual_threshold(scores, field_a, field_b,
 
     반환:
         List[str]: 이미지별 판별 결과 ('both', 'field_a_only', 'combined_only', 'neither')
+
     """
     results = []
     for s in scores:
@@ -99,6 +123,7 @@ def evaluate_dual_threshold(scores, field_a, field_b,
 
     return results
 
+
 @log_exception
 def get_low_quality_images(image_names, image_features):
     """
@@ -110,8 +135,11 @@ def get_low_quality_images(image_names, image_features):
 
     반환:
         List[str]: 저품질 이미지 이름 리스트
+
     """
-    text_features, fields = load_clip_iqa_prompt_features('app/model/clip_iqa_prompt_features.pt')
+    text_features, fields = load_clip_iqa_prompt_features(
+        "app/model/clip_iqa_prompt_features.pt"
+    )
     scores = get_field_scores(image_features, text_features, fields)
     results = evaluate_dual_threshold(
         scores,
@@ -119,6 +147,8 @@ def get_low_quality_images(image_names, image_features):
         field_b="good",
         weight_b=0.25,
         threshold_combined=0.490,
-        threshold_a=0.488
+        threshold_a=0.488,
     )
-    return [name for name, result in zip(image_names, results) if result != "both"]
+    return [
+        name for name, result in zip(image_names, results) if result != "both"
+    ]
