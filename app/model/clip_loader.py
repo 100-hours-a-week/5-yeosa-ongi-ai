@@ -3,6 +3,7 @@ import clip
 _model = None
 _preprocess = None
 
+
 def load_clip_model(device="cpu"):
     global _model, _preprocess
     if _model is None or _preprocess is None:
