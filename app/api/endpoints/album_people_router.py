@@ -6,7 +6,7 @@ from fastapi import Request
 
 router = APIRouter(tags=["people"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 async def people(req: ImageRequest, request: Request):
     return await people_controller(req, request)

@@ -5,7 +5,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["health"])
 
-@router.get("/", status_code=200)
+@router.get("", status_code=200)
 @log_flow
 def health_check():
     return {

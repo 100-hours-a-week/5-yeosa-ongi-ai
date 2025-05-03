@@ -5,7 +5,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["duplicate"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 def duplicate(req: ImageRequest):
     return duplicate_controller(req)
