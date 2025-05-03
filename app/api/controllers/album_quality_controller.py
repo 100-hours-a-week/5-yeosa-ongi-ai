@@ -18,9 +18,7 @@ def quality_controller(req: ImageRequest, request: Request):
             content={"message": "embedding_required", "data": missing_keys},
         )
 
-    image_features = torch.stack([
-        get_cached_embedding(image_name) for image_name in image_names
-    ])
+    image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
 
     result = get_low_quality_images(image_names, image_features)

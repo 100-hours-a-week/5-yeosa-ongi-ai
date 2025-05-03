@@ -17,8 +17,6 @@ def duplicate_controller(req: ImageRequest):
             content={"message": "embedding_required", "data": missing_keys},
         )
 
-    image_features = torch.stack([
-        get_cached_embedding(image_name) for image_name in image_names
-    ])
+    image_features = torch.stack(image_features)
     data = find_duplicate_groups(image_features, image_names)
     return {"message": "success", "data": data}
