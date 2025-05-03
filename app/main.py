@@ -13,6 +13,7 @@ from app.model.clip_loader import load_clip_model
 from app.model.aesthetic_regressor import loader_aesthetic_regressor
 from app.model.arcface_loader import load_arcface_model
 from app.model.yolo_detector_loader import load_yolo_detector
+from app.middleware.error_handler import setup_exception_handler
 from app.utils.image_loader import get_image_loader
 from app.config.settings import IMAGE_MODE
 from app.api import api_router
@@ -20,6 +21,7 @@ from app.api import api_router
 app = FastAPI()
 torch.set_num_threads(1)
 
+setup_exception_handler(app)
 
 @app.on_event("startup")
 def load():
