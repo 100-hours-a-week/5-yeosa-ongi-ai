@@ -1,6 +1,8 @@
 import torch
 from typing import List, Dict
+from app.utils.logging_utils import log_exception
 
+@log_exception
 def estimate_highlight_score(
     image_features: torch.Tensor,
     image_names: List[str],

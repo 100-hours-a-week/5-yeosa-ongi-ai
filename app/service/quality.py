@@ -1,7 +1,9 @@
 import torch
 import torch.nn.functional as F
 from typing import List, Dict
+from app.utils.logging_utils import log_exception
 
+@log_exception
 def compute_pairwise_score(image_features, text_pair):
     """
     이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해
@@ -18,7 +20,7 @@ def compute_pairwise_score(image_features, text_pair):
     probs = F.softmax(sim, dim=-1)             # softmax 적용
     return probs[:, 0]                         # positive 클래스의 확률 반환
 
-
+@log_exception
 def get_field_scores(image_features: torch.Tensor, text_features: torch.Tensor, fields: List[str]) -> List[Dict[str, float]]:
     """
     각 이미지에 대해 모든 필드의 positive 점수를 계산합니다.
@@ -41,6 +43,7 @@ def get_field_scores(image_features: torch.Tensor, text_features: torch.Tensor, 
 
     return scores
 
+@log_exception
 def load_clip_iqa_prompt_features(path: str):
     """
     저장된 .pt 파일에서 CLIP-IQA 프롬프트 정보를 불러옵니다.
@@ -57,7 +60,7 @@ def load_clip_iqa_prompt_features(path: str):
     data = torch.load(path)
     return data["text_features"], data["fields"]
 
-
+@log_exception
 def evaluate_dual_threshold(scores, field_a, field_b,
                              weight_b=0.25, threshold_combined=0.490, threshold_a=0.488):
     """
@@ -96,6 +99,7 @@ def evaluate_dual_threshold(scores, field_a, field_b,
 
     return results
 
+@log_exception
 def get_low_quality_images(image_names, image_features):
     """
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
