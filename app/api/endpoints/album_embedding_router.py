@@ -5,7 +5,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["embedding"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 async def embed(req: ImageRequest, request: Request):
     return await embed_controller(req, request)

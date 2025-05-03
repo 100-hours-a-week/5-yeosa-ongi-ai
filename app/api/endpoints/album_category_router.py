@@ -6,7 +6,7 @@ from fastapi import Request
 
 router = APIRouter(tags=["category"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 def categorize(req: ImageRequest, request: Request):
     return categorize_controller(req, request)

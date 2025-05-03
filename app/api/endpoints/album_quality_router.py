@@ -6,7 +6,7 @@ from fastapi import Request
 
 router = APIRouter(tags=["category"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 def quality(req: ImageRequest, request: Request):
     return quality_controller(req, request)

@@ -7,7 +7,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["score"])
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @log_flow
 def highlight_scoring(req: CategoryScoreRequest, request: Request):
     return highlight_scoring_controller(req, request)
