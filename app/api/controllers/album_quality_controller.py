@@ -1,10 +1,11 @@
 import torch
+from fastapi import Request
 from fastapi.responses import JSONResponse
-from app.core.cache import get_cached_embedding, get_cached_embeddings_parallel
+
+from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageRequest
 from app.service.quality import get_low_quality_images
 from app.utils.logging_decorator import log_exception
-from fastapi import Request
 
 
 @log_exception

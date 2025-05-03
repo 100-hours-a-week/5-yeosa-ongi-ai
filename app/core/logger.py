@@ -1,5 +1,6 @@
-from loguru import logger
 import sys
+
+from loguru import logger
 
 logger.remove()
 logger.add(
@@ -7,5 +8,5 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level}</level> | <cyan>{name}</cyan>:<cyan>{line}</cyan> - <level>{message</level>}",
     level="INFO",
     backtrace=True,
-    colorize=True
+    colorize=True,
 )

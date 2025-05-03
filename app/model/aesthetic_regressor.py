@@ -2,6 +2,7 @@ import torch
 
 _aesthetic_regressor = None
 
+
 class AestheticRegressor(torch.nn.Module):
     def __init__(self, dim=512):
         super().__init__()
@@ -10,6 +11,7 @@ class AestheticRegressor(torch.nn.Module):
 
     def forward(self, x):
         return self.fc(x).squeeze(1)
+
 
 def loader_aesthetic_regressor():
     global _aesthetic_regressor

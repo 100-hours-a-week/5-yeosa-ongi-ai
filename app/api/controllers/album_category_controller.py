@@ -1,10 +1,12 @@
 import torch
+from fastapi import Request
 from fastapi.responses import JSONResponse
-from app.core.cache import get_cached_embedding, get_cached_embeddings_parallel
-from app.schemas.album_schema import ImageRequest, ImageCategoryGroup
+
+from app.core.cache import get_cached_embeddings_parallel
+from app.schemas.album_schema import ImageCategoryGroup, ImageRequest
 from app.service.category import categorize_images
 from app.utils.logging_decorator import log_exception
-from fastapi import Request
+
 
 @log_exception
 def categorize_controller(req: ImageRequest, request: Request):
@@ -25,7 +27,10 @@ def categorize_controller(req: ImageRequest, request: Request):
     image_features /= image_features.norm(dim=-1, keepdim=True)
 
     categorized = categorize_images(
-        image_features.cpu(), image_names, text_features.cpu(), translated_categories
+        image_features.cpu(),
+        image_names,
+        text_features.cpu(),
+        translated_categories,
     )
 
     response = [

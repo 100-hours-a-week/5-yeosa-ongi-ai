@@ -1,16 +1,21 @@
+from collections import defaultdict
+
 import torch
 from sklearn.cluster import DBSCAN
-from collections import defaultdict
+
 from app.utils.logging_decorator import log_exception
+
 
 @log_exception
 def find_duplicate_groups(
     image_features: torch.Tensor,
     image_names: list[str],
     eps: float = 0.1,
-    min_samples: int = 2
+    min_samples: int = 2,
 ) -> list[list[str]]:
     """
+    중복 이미지를 클러스터링합니다.
+
     Args:
         image_features: [N, D] torch.Tensor - 이미지 임베딩 (CPU)
         image_names: list of N strings
@@ -19,8 +24,8 @@ def find_duplicate_groups(
 
     Returns:
         List of lists of image names that are similar
-    """
 
+    """
     # 1. Normalize → Cosine similarity → Cosine distance
     normed = image_features / image_features.norm(dim=1, keepdim=True)
     similarity_matrix = normed @ normed.T
@@ -28,8 +33,9 @@ def find_duplicate_groups(
     distance_matrix = distance_matrix.clamp(min=0)
 
     # 2. DBSCAN clustering (precomputed distance)
-    labels = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed') \
-             .fit_predict(distance_matrix.numpy())
+    labels = DBSCAN(
+        eps=eps, min_samples=min_samples, metric="precomputed"
+    ).fit_predict(distance_matrix.numpy())
 
     # 3. Group by cluster label (exclude noise = -1)
     groups = defaultdict(list)
@@ -39,9 +45,10 @@ def find_duplicate_groups(
 
     return list(groups.values())
 
+
 if __name__ == "__main__":
     imagedata = torch.load("image_features.pt", weights_only=True)
-    image_names = imagedata['image_names']
-    image_features = imagedata['image_features']
+    image_names = imagedata["image_names"]
+    image_features = imagedata["image_features"]
     duplicate_image_groups = find_duplicate_groups(image_features, image_names)
-    print('done')
+    print("done")
