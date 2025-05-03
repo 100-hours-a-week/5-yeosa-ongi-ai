@@ -46,7 +46,7 @@ class BaseImageLoader(ABC):
 class LocalImageLoader(BaseImageLoader):
     """로컬 파일 시스템에서 이미지를 로드하는 클래스입니다."""
 
-    def __init__(self, image_dir: str = LOCAL_IMG_PATH):
+    def __init__(self, image_dir: str | None = LOCAL_IMG_PATH):
         """
         Args:
             image_dir (str): 이미지가 저장된 로컬 디렉토리 경로
