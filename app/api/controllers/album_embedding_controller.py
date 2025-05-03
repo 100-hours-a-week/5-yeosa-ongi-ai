@@ -1,9 +1,11 @@
 from app.utils.image_loader import get_image_loader
 from app.service.embedding import embed_images  # service import
 from app.schemas.album_schema import ImageRequest
+from app.utils.logging_decorator import log_exception
 from fastapi import Request
 
 
+@log_exception
 async def embed_controller(req: ImageRequest, request: Request):
     filenames = req.images
 

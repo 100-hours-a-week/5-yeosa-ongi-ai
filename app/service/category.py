@@ -1,6 +1,8 @@
 import torch
 from collections import Counter, defaultdict
+from app.utils.logging_decorator import log_exception
 
+@log_exception
 def compute_similarity(
     image_features: torch.Tensor, text_features: torch.Tensor, topk: int
 ):
