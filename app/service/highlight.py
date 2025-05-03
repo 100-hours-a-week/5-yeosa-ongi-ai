@@ -1,13 +1,14 @@
 import torch
-from typing import List, Dict
+
 from app.utils.logging_decorator import log_exception
+
 
 @log_exception
 def estimate_highlight_score(
     image_features: torch.Tensor,
-    image_names: List[str],
-    aesthetic_regressor: torch.nn.Module
-) -> List[Dict[str, float]]:
+    image_names: list[str],
+    aesthetic_regressor: torch.nn.Module,
+) -> list[dict[str, float]]:
     """
     Estimate highlight scores for images using an aesthetic regressor model.
 
@@ -18,6 +19,7 @@ def estimate_highlight_score(
 
     Returns:
         List[Dict[str, float]]: Each element contains {'image': image_name, 'score': score}.
+
     """
     aesthetic_regressor.eval()
     with torch.no_grad():

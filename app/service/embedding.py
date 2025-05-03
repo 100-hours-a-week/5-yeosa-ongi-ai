@@ -1,6 +1,8 @@
 import torch
+
 from app.core.cache import set_cached_embedding
 from app.utils.logging_decorator import log_exception
+
 
 @log_exception
 def embed_images(
