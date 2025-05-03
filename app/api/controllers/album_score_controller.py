@@ -3,7 +3,7 @@ from itertools import chain
 from fastapi.responses import JSONResponse
 from app.core.cache import get_cached_embedding, get_cached_embeddings_parallel
 from app.service.highlight import estimate_highlight_score
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 from app.schemas.album_schema import CategoryScoreRequest
 from fastapi import Request
 

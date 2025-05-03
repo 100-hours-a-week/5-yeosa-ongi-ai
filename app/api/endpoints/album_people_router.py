@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.api.controllers.album_people_controller import people_controller
 from app.schemas.album_schema import ImageRequest
-from app.utils.logging_utils import log_flow
+from app.utils.logging_decorator import log_flow
 from fastapi import Request
 
 router = APIRouter(tags=["people"])

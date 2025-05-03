@@ -1,6 +1,6 @@
 import torch
 from collections import Counter, defaultdict
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 
 @log_exception
 def compute_similarity(

@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from typing import List, Dict
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 
 @log_exception
 def compute_pairwise_score(image_features, text_pair):

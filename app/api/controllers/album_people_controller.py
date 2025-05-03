@@ -1,7 +1,7 @@
 from app.utils.image_loader import get_image_loader
 from app.schemas.album_schema import ImageRequest
 from app.service.people import cluster_faces
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 from fastapi import Request
 
 @log_exception

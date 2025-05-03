@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.utils.logging_utils import log_flow
+from app.utils.logging_decorator import log_flow
 
 # HACK: Health check용 임시 라우터
 

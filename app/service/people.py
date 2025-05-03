@@ -4,7 +4,7 @@ from torch import Tensor
 from collections import defaultdict
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import cosine_distances
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 from typing import List
 
 device = "cpu"

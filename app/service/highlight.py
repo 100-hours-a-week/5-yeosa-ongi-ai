@@ -1,6 +1,6 @@
 import torch
 from typing import List, Dict
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 
 @log_exception
 def estimate_highlight_score(

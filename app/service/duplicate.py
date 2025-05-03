@@ -1,7 +1,7 @@
 import torch
 from sklearn.cluster import DBSCAN
 from collections import defaultdict
-from app.utils.logging_utils import log_exception
+from app.utils.logging_decorator import log_exception
 
 @log_exception
 def find_duplicate_groups(
