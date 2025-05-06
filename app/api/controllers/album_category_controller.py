@@ -29,6 +29,7 @@ async def categorize_controller(req: ImageRequest, request: Request):
     image_features /= image_features.norm(dim=-1, keepdim=True)
     
     loop = request.app.state.loop
+    
     task_func = partial(
         categorize_images,
         image_features.cpu(),
