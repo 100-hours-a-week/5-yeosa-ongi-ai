@@ -12,6 +12,7 @@ from app.utils.logging_decorator import log_exception
 
 @log_exception
 async def categorize_controller(req: ImageRequest, request: Request):
+    # TODO: text_features를 불러오는 부분은 app.state에 저장해놓도록 수정
     data = torch.load("app/model/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
     text_features = data["text_features"]
@@ -29,7 +30,6 @@ async def categorize_controller(req: ImageRequest, request: Request):
     image_features /= image_features.norm(dim=-1, keepdim=True)
     
     loop = request.app.state.loop
-    
     task_func = partial(
         categorize_images,
         image_features.cpu(),
