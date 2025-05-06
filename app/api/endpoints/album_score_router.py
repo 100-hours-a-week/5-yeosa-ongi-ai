@@ -12,4 +12,6 @@ router = APIRouter(tags=["score"])
 @router.post("", status_code=201)
 @log_flow
 async def highlight_scoring(req: CategoryScoreRequest, request: Request):
-    return await highlight_scoring_controller(req, request)
+    return await request.app.state.postprocess_queue.enqueue(
+        lambda: highlight_scoring_controller(req, request)
+    )
