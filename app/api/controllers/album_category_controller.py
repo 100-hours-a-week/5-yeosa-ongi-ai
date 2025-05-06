@@ -24,7 +24,7 @@ async def categorize_controller(req: ImageRequest, request: Request):
         get_cached_embeddings_parallel,
         image_names
     )
-    image_features, missing_keys = loop.run_in_executor(
+    image_features, missing_keys = await loop.run_in_executor(
         None,
         embed_load_func
     )
