@@ -20,14 +20,8 @@ from app.model.clip_loader import load_clip_model
 from app.model.yolo_detector_loader import load_yolo_detector
 from app.utils.image_loader import get_image_loader
 
-app = FastAPI()
-torch.set_num_threads(1)
-
-setup_exception_handler(app)
-
-
-@app.on_event("startup")
-def load():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
     clip_model, clip_preprocess = load_clip_model()
     aesthetic_regressor = loader_aesthetic_regressor()
@@ -40,6 +34,11 @@ def load():
     app.state.arcface_model = arcface_model
     app.state.yolo_detector = yolo_detector
     app.state.image_loader = get_image_loader(IMAGE_MODE)
+    yield
 
+app = FastAPI(lifespan=lifespan)
+torch.set_num_threads(1)
+
+setup_exception_handler(app)
 
 app.include_router(api_router)
