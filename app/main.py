@@ -19,6 +19,7 @@ from app.model.aesthetic_regressor import loader_aesthetic_regressor
 from app.model.arcface_loader import load_arcface_model
 from app.model.clip_loader import load_clip_model
 from app.model.yolo_detector_loader import load_yolo_detector
+from app.core.task_queue import SerialTaskQueue
 from app.utils.image_loader import get_image_loader
 
 @asynccontextmanager
@@ -36,6 +37,12 @@ async def lifespan(app: FastAPI):
     app.state.arcface_model = arcface_model
     app.state.yolo_detector = yolo_detector
     app.state.image_loader = get_image_loader(IMAGE_MODE)
+    app.state.embedding_queue = SerialTaskQueue()
+    app.state.postprocess_queue = SerialTaskQueue()
+    app.state.people_clustering_queue = SerialTaskQueue()
+    app.state.embedding_queue.start()
+    app.state.postprocess_queue.start()
+    app.state.people_clustering_queue.start()
     app.state.loop = loop
     yield
 
