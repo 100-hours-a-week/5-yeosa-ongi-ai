@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -9,7 +11,7 @@ from app.utils.logging_decorator import log_exception
 
 
 @log_exception
-def categorize_controller(req: ImageRequest, request: Request):
+async def categorize_controller(req: ImageRequest, request: Request):
     data = torch.load("app/model/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
     text_features = data["text_features"]
@@ -25,12 +27,19 @@ def categorize_controller(req: ImageRequest, request: Request):
 
     image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
-
-    categorized = categorize_images(
+    
+    loop = request.app.state.loop
+    task_func = partial(
+        categorize_images,
         image_features.cpu(),
         image_names,
         text_features.cpu(),
         translated_categories,
+    )
+
+    categorized = await loop.run_in_executor(
+        None,
+        task_func
     )
 
     response = [
