@@ -9,5 +9,5 @@ router = APIRouter(tags=["category"])
 
 @router.post("", status_code=201)
 @log_flow
-def categorize(req: ImageRequest, request: Request):
-    return categorize_controller(req, request)
+async def categorize(req: ImageRequest, request: Request):
+    return await categorize_controller(req, request)
