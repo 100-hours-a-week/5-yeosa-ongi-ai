@@ -10,4 +10,6 @@ router = APIRouter(tags=["category"])
 @router.post("", status_code=201)
 @log_flow
 async def quality(req: ImageRequest, request: Request):
-    return await quality_controller(req, request)
+    return await request.app.state.postprocess_queue.enqueue(
+        lambda: quality_controller(req, request)
+    )
