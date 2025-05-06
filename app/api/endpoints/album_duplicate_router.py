@@ -10,4 +10,6 @@ router = APIRouter(tags=["duplicate"])
 @router.post("", status_code=201)
 @log_flow
 async def duplicate(req: ImageRequest, request: Request):
-    return await duplicate_controller(req, request)
+    return await request.app.state.postprocess_queue.enqueue(
+        lambda: duplicate_controller(req, request)
+    )
