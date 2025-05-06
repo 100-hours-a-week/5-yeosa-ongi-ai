@@ -12,7 +12,6 @@ from app.utils.logging_decorator import log_exception
 
 @log_exception
 async def quality_controller(req: ImageRequest, request: Request):
-    image_names = req.images
     loop = request.app.state.loop
 
     image_names = req.images
@@ -33,6 +32,7 @@ async def quality_controller(req: ImageRequest, request: Request):
     image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
 
-    result = get_low_quality_images(image_names, image_features)
+    task_func = partial(get_low_quality_images, image_names, image_features)
+    result = await loop.run_in_executor(None, task_func)
 
     return {"message": "success", "data": result}
