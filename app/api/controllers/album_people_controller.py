@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Any
 
 from fastapi import Request
 
@@ -8,7 +9,7 @@ from app.utils.logging_decorator import log_exception
 
 
 @log_exception
-async def people_controller(req: ImageRequest, request: Request):
+async def people_controller(req: ImageRequest, request: Request) -> dict[str, Any]:
     """
     이미지 파일들의 이름을 받아 동일 인물 기준으로 클러스터링합니다.
 
