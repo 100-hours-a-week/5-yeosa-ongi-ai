@@ -9,7 +9,7 @@ router = APIRouter(tags=["health"])
 
 @router.get("", status_code=200)
 @log_flow
-def health_check():
+def health_check() -> dict[str, str]:
     return {
         "status": "ok",
         "message": "ONGI AI Server is healthy",
