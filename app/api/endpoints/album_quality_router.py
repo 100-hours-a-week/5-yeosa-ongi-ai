@@ -9,5 +9,5 @@ router = APIRouter(tags=["category"])
 
 @router.post("", status_code=201)
 @log_flow
-def quality(req: ImageRequest, request: Request):
-    return quality_controller(req, request)
+async def quality(req: ImageRequest, request: Request):
+    return await quality_controller(req, request)

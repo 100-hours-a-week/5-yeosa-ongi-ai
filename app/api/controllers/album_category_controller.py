@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -9,14 +11,23 @@ from app.utils.logging_decorator import log_exception
 
 
 @log_exception
-def categorize_controller(req: ImageRequest, request: Request):
+async def categorize_controller(req: ImageRequest, request: Request):
+    # TODO: text_features를 불러오는 부분은 app.state에 저장해놓도록 수정
     data = torch.load("app/model/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
     text_features = data["text_features"]
+    
+    loop = request.app.state.loop
 
     image_names = req.images
-
-    image_features, missing_keys = get_cached_embeddings_parallel(image_names)
+    embed_load_func = partial(
+        get_cached_embeddings_parallel,
+        image_names
+    )
+    image_features, missing_keys = await loop.run_in_executor(
+        None,
+        embed_load_func
+    )
     if missing_keys:
         return JSONResponse(
             status_code=428,
@@ -25,12 +36,17 @@ def categorize_controller(req: ImageRequest, request: Request):
 
     image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
-
-    categorized = categorize_images(
+    
+    task_func = partial(
+        categorize_images,
         image_features.cpu(),
         image_names,
         text_features.cpu(),
         translated_categories,
+    )
+    categorized = await loop.run_in_executor(
+        None,
+        task_func
     )
 
     response = [

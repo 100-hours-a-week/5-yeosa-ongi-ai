@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any
 
 from fastapi import Request
@@ -29,6 +30,7 @@ async def people_controller(req: ImageRequest, request: Request) -> dict[str, An
 
     """
     filenames = req.images
+    loop = request.app.state.loop
 
     image_loader = request.app.state.image_loader
     images = await image_loader.load_images(filenames)
@@ -36,8 +38,7 @@ async def people_controller(req: ImageRequest, request: Request) -> dict[str, An
     arcface_model = request.app.state.arcface_model
     yolo_detector = request.app.state.yolo_detector
 
-    clustering_result = cluster_faces(
-        images, filenames, arcface_model, yolo_detector
-    )
+    task_func = partial(cluster_faces, images, filenames, arcface_model, yolo_detector)
+    clustering_result = await loop.run_in_executor(None, task_func)
 
     return {"message": "success", "data": clustering_result}

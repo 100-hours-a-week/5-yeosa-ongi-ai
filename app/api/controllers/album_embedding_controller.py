@@ -1,3 +1,5 @@
+from functools import partial
+
 from fastapi import Request
 
 from app.schemas.album_schema import ImageRequest
@@ -14,14 +16,20 @@ async def embed_controller(req: ImageRequest, request: Request):
 
     clip_model = request.app.state.clip_model
     clip_preprocess = request.app.state.clip_preprocess
-
-    embed_images(
+    loop = request.app.state.loop
+    task_func = partial(
+        embed_images,
         clip_model,
         clip_preprocess,
         images,
         filenames,
         batch_size=16,
-        device="cpu",
+        device="cpu"
+    )
+
+    await loop.run_in_executor(
+        None,
+        task_func
     )
 
     return {"message": "success", "data": None}

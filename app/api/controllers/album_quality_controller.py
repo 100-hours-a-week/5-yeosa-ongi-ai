@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -9,10 +11,18 @@ from app.utils.logging_decorator import log_exception
 
 
 @log_exception
-def quality_controller(req: ImageRequest, request: Request):
-    image_names = req.images
+async def quality_controller(req: ImageRequest, request: Request):
+    loop = request.app.state.loop
 
-    image_features, missing_keys = get_cached_embeddings_parallel(image_names)
+    image_names = req.images
+    embed_load_func = partial(
+        get_cached_embeddings_parallel,
+        image_names
+    )
+    image_features, missing_keys = await loop.run_in_executor(
+        None,
+        embed_load_func
+    )
     if missing_keys:
         return JSONResponse(
             status_code=428,
@@ -22,6 +32,7 @@ def quality_controller(req: ImageRequest, request: Request):
     image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
 
-    result = get_low_quality_images(image_names, image_features)
+    task_func = partial(get_low_quality_images, image_names, image_features)
+    result = await loop.run_in_executor(None, task_func)
 
     return {"message": "success", "data": result}
