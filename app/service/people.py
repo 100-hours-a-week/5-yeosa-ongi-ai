@@ -2,6 +2,9 @@ from collections import defaultdict
 
 import numpy as np
 import torch
+from typing import Any
+from numpy.typing import NDArray
+from PIL import Image
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import cosine_distances
 from torch import Tensor
@@ -11,7 +14,7 @@ from app.utils.logging_decorator import log_exception
 device = "cpu"
 
 
-def preprocess(face: np.ndarray) -> np.ndarray:
+def preprocess(face: NDArray[np.uint8]) -> NDArray[np.float32]:
     """
     얼굴 이미지를 ArcFace 입력 형식에 맞게 전처리합니다.
 
@@ -27,12 +30,12 @@ def preprocess(face: np.ndarray) -> np.ndarray:
 
     """
     face = np.transpose(face, (2, 0, 1)).astype(np.float32)
-    return (face - 127.5) / 128.0
+    return ((face - 127.5) / 128.0).astype(np.float32)
 
 
 @log_exception
 def cluster_faces(
-    images: list, file_names: list[str], arcface_model, yolo_detector
+    images: list[Image.Image], file_names: list[str], arcface_model: Any, yolo_detector: Any
 ) -> list[list[str]]:
     """
     유사한 얼굴을 클러스터링합니다.
@@ -43,7 +46,7 @@ def cluster_faces(
     이후 클러스터의 평균 및 최대 거리 기준으로 신뢰도 있는 결과만 필터링합니다.
 
     Args:
-        images (list): PIL.Image 또는 ndarray 형태의 이미지 리스트.
+        images (list): PIL.Image 형태의 이미지 리스트.
         file_names (list[str]): 각 이미지에 대응하는 파일명 리스트.
         arcface_model: 얼굴 임베딩을 위한 ArcFace 모델.
         yolo_detector: 얼굴 검출 및 정렬을 위한 YOLO 기반 detector 객체.

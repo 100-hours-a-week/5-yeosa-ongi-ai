@@ -12,14 +12,21 @@ from app.config.settings import ImageMode
 
 load_dotenv()
 
-LOCAL_IMG_PATH: str | None = os.getenv("LOCAL_IMG_PATH")
-BUCKET_NAME: str | None = os.getenv("BUCKET_NAME")
-GCP_KEY_PATH: str | None = os.getenv("GCP_KEY_PATH")
+LOCAL_IMG_PATH_raw = os.getenv("LOCAL_IMG_PATH")
+BUCKET_NAME_raw = os.getenv("BUCKET_NAME")
+GCP_KEY_PATH_raw = os.getenv("GCP_KEY_PATH")
 
-assert LOCAL_IMG_PATH is not None, "LOCAL_IMG_PATH은 .env에 설정되어야 합니다."
-assert BUCKET_NAME is not None, "BUCKET_NAME은 .env에 설정되어야 합니다."
-assert GCP_KEY_PATH is not None, "KEY_PATH은 .env에 설정되어야 합니다."
+if LOCAL_IMG_PATH_raw is None:
+    raise EnvironmentError("LOCAL_IMG_PATH은 .env에 설정되어야 합니다.")
+if BUCKET_NAME_raw is None:
+    raise EnvironmentError("BUCKET_NAME은 .env에 설정되어야 합니다.")
+if GCP_KEY_PATH_raw is None:
+    raise EnvironmentError("GCP_KEY_PATH은 .env에 설정되어야 합니다.")
 
+# 타입이 str로 확정됨 (mypy 추론 가능)
+LOCAL_IMG_PATH: str = LOCAL_IMG_PATH_raw
+BUCKET_NAME: str = BUCKET_NAME_raw
+GCP_KEY_PATH: str = GCP_KEY_PATH_raw
 
 class BaseImageLoader(ABC):
     """
@@ -29,7 +36,7 @@ class BaseImageLoader(ABC):
     """
 
     @abstractmethod
-    async def load_images(self) -> list[Image.Image]:
+    async def load_images(self, filenames: list[str]) -> list[Image.Image]:
         """
         주어진 이미지 파일 이름 리스트에 대해 이미지를 로드합니다.
 
@@ -46,7 +53,7 @@ class BaseImageLoader(ABC):
 class LocalImageLoader(BaseImageLoader):
     """로컬 파일 시스템에서 이미지를 로드하는 클래스입니다."""
 
-    def __init__(self, image_dir: str | None = LOCAL_IMG_PATH):
+    def __init__(self, image_dir: str = LOCAL_IMG_PATH):
         """
         Args:
             image_dir (str): 이미지가 저장된 로컬 디렉토리 경로
@@ -91,7 +98,7 @@ class GCSImageLoader(BaseImageLoader):
         self.bucket = self.client.bucket(bucket_name)
         self.executor = ThreadPoolExecutor(max_workers=10)
 
-    def _download(self, file_name):
+    def _download(self, file_name: str) -> Image.Image:
         """
         GCS에서 단일 이미지를 다운로드하고 RGB로 변환합니다.
 
