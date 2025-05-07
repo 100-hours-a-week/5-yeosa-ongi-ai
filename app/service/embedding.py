@@ -1,10 +1,10 @@
 import torch
 
 from app.core.cache import set_cached_embedding
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
+@log_flow
 def embed_images(
     model, preprocess, images, filenames, batch_size=16, device="cpu"
 ):

@@ -7,10 +7,10 @@ from fastapi.responses import JSONResponse
 from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageCategoryGroup, ImageRequest
 from app.service.category import categorize_images
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
+@log_flow
 async def categorize_controller(req: ImageRequest, request: Request):
     # TODO: text_features를 불러오는 부분은 app.state에 저장해놓도록 수정
     data = torch.load("app/model/category_features.pt", weights_only=True)
