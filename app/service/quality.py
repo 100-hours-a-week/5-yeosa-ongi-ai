@@ -1,10 +1,10 @@
 import torch
 import torch.nn.functional as F
 
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
+@log_flow
 def compute_pairwise_score(image_features, text_pair):
     """
     이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해 softmax를 통해 positive 점수를 계산합니다.
@@ -22,7 +22,7 @@ def compute_pairwise_score(image_features, text_pair):
     return probs[:, 0]  # positive 클래스의 확률 반환
 
 
-@log_exception
+@log_flow
 def get_field_scores(
     image_features: torch.Tensor,
     text_features: torch.Tensor,

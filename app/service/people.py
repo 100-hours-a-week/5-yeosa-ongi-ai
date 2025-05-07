@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import cosine_distances
 from torch import Tensor
 
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 device = "cpu"
 
@@ -33,7 +33,7 @@ def preprocess(face: NDArray[np.uint8]) -> NDArray[np.float32]:
     return ((face - 127.5) / 128.0).astype(np.float32)
 
 
-@log_exception
+@log_flow
 def cluster_faces(
     images: list[Image.Image], file_names: list[str], arcface_model: Any, yolo_detector: Any
 ) -> list[list[str]]:

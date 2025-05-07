@@ -17,7 +17,7 @@ def log_exception(func: Callable[P, R]) -> Callable[P, R]:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.opt(depth=1).exception(
+            logger.opt(depth=1).error(
                 f"{func.__name__} 함수 예외 발생: {e}"
             )
             raise
@@ -27,7 +27,7 @@ def log_exception(func: Callable[P, R]) -> Callable[P, R]:
         try:
             return await func(*args, **kwargs)  # type: ignore
         except Exception as e:
-            logger.opt(depth=1).exception(
+            logger.opt(depth=1).error(
                 f"{func.__name__} 함수 예외 발생: {e}"
             )
             raise
@@ -48,7 +48,7 @@ def log_flow(func: Callable[P, R]) -> Callable[P, R]:
             return result
 
         except Exception as e:
-            logger.opt(depth=2).exception(
+            logger.opt(depth=2).error(
                 f"{func.__name__} 함수 예외 발생: {e}"
             )
             raise
@@ -63,7 +63,7 @@ def log_flow(func: Callable[P, R]) -> Callable[P, R]:
             return result  # type: ignore
 
         except Exception as e:
-            logger.opt(depth=2).exception(
+            logger.opt(depth=2).error(
                 f"{func.__name__} 함수 예외 발생: {e}"
             )
             raise

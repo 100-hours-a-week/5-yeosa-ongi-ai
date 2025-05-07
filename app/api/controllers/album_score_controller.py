@@ -8,10 +8,10 @@ from fastapi.responses import JSONResponse
 from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import CategoryScoreRequest
 from app.service.highlight import score_each_category
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
+@log_flow
 async def highlight_scoring_controller(req: CategoryScoreRequest, request: Request):
     categories = req.categories
     all_images = list(

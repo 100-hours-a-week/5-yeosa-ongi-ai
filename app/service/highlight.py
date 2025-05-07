@@ -1,8 +1,8 @@
 import torch
 
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
-@log_exception
+@log_flow
 def score_each_category(categories, embedding_map, regressor):
     data = []
     for category in categories:
@@ -16,7 +16,7 @@ def score_each_category(categories, embedding_map, regressor):
         data.append({"category": category.category, "images": scores})
     return data
 
-@log_exception
+@log_flow
 def estimate_highlight_score(
     image_features: torch.Tensor,
     image_names: list[str],

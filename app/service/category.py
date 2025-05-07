@@ -2,10 +2,9 @@ from collections import Counter, defaultdict
 
 import torch
 
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
 def compute_similarity(
     image_features: torch.Tensor, text_features: torch.Tensor, topk: int
 ):
@@ -47,6 +46,7 @@ def group_images_by_category(filtered_results, top_tags):
     return dict(grouped)
 
 
+@log_flow
 def categorize_images(
     image_features: torch.Tensor,
     image_names: list[str],

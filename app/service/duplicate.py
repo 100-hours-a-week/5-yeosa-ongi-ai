@@ -3,10 +3,10 @@ from collections import defaultdict
 import torch
 from sklearn.cluster import DBSCAN
 
-from app.utils.logging_decorator import log_exception
+from app.utils.logging_decorator import log_exception, log_flow
 
 
-@log_exception
+@log_flow
 def find_duplicate_groups(
     image_features: torch.Tensor,
     image_names: list[str],
