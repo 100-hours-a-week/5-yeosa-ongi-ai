@@ -9,10 +9,10 @@ from app.utils.logging_decorator import log_exception, log_flow
 
 @log_flow
 async def embed_controller(req: ImageRequest, request: Request):
-    filenames = req.images
-
+    image_refs = req.images
     image_loader = request.app.state.image_loader
-    images = await image_loader.load_images(filenames)
+
+    images = await image_loader.load_images(image_refs)
 
     clip_model = request.app.state.clip_model
     clip_preprocess = request.app.state.clip_preprocess
@@ -22,7 +22,7 @@ async def embed_controller(req: ImageRequest, request: Request):
         clip_model,
         clip_preprocess,
         images,
-        filenames,
+        image_refs,
         batch_size=16,
         device="cpu"
     )

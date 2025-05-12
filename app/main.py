@@ -13,7 +13,7 @@ import torch
 from fastapi import FastAPI
 
 from app.api import api_router
-from app.config.settings import IMAGE_MODE
+from app.config.settings import IMAGE_MODE, APP_ENV
 from app.middleware.error_handler import setup_exception_handler
 from app.model.aesthetic_regressor import loader_aesthetic_regressor
 from app.model.arcface_loader import load_arcface_model
