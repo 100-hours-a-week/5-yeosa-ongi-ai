@@ -69,7 +69,7 @@ except ValueError:
         f"잘못된 MODEL_NAME: {MODEL_NAME}. 선택 가능한 MODEL_NAME: {[m.value for m in ModelName]}"
     )
 
-MODEL_BASE_PATH = f"app/model/{MODEL_NAME}"
+MODEL_BASE_PATH = f"app/model/{MODEL_NAME.value}"
 CATEGORY_FEATURES_FILENAME = "category_features.pt"
 QUALITY_FEATURES_FILENAME = "quality_features.pt"
 AESTHETIC_REGRESSOR_FILENAME = "aesthetic_regressor.pth"
