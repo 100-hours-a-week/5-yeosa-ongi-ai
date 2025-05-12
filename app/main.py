@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     data = torch.load(f"app/model/{model_name}/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
-    text_features = data["text_features"]
+    category_text_features = data["text_features"]
 
     app.state.clip_model = clip_model
     app.state.clip_preprocess = clip_preprocess
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     app.state.people_clustering_queue.start()
     app.state.loop = loop
     app.state.translated_categories = translated_categories
-    app.state.text_features = text_features
+    app.state.category_text_features = category_text_features
     yield
 
 app = FastAPI(lifespan=lifespan)

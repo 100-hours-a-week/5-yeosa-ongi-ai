@@ -13,7 +13,7 @@ from app.utils.logging_decorator import log_exception, log_flow
 @log_flow
 async def categorize_controller(req: ImageRequest, request: Request):
     translated_categories = request.app.state.translated_categories
-    text_features = request.app.state.text_features
+    text_features = request.app.state.category_text_features
     
     loop = request.app.state.loop
 
