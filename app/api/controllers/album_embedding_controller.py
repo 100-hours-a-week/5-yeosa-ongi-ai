@@ -33,7 +33,7 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
         extra={"total_images": len(req.images)},
     )
 
-    filenames = req.images
+    image_refs = req.images
 
     # 1. 이미지 로드
     image_loader = request.app.state.image_loader
@@ -55,7 +55,7 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
         clip_model,
         clip_preprocess,
         images,
-        filenames,
+        image_refs,
         batch_size=DEFAULT_BATCH_SIZE,
         device=DEFAULT_DEVICE,
     )
@@ -64,7 +64,7 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
 
     logger.info(
         "이미지 임베딩 완료",
-        extra={"processed_images": len(filenames)},
+        extra={"processed_images": len(image_refs)},
     )
 
     return JSONResponse(

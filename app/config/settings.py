@@ -21,6 +21,21 @@ class ImageMode(str, Enum):
     GCS = "gcs"
     S3 = "s3"
 
+
+class ModelName(str, Enum):
+    """
+    CLIP 모델 이름을 선택하는 모드입니다.
+
+    Attributes:
+        ViT-B/32: ViT-B/32 모델을 사용합니다.
+        ViT-L/14: ViT-L/14 모델을 사용합니다.
+
+    """
+
+    ViT_B_32 = "ViT-B/32"
+    ViT_L_14 = "ViT-L/14"
+
+
 class AppEnv(str, Enum):
     """
     이미지를 어디서 로드할지 선택하는 모드입니다.
@@ -35,8 +50,10 @@ class AppEnv(str, Enum):
     PROD = "prod"
     DEV = "dev"
 
+
 mode_str = os.getenv("IMAGE_MODE", "s3")
 app_env = os.getenv("APP_ENV", "prod")
+MODEL_NAME = os.getenv("MODEL_NAME", "ViT-B/32")
 
 try:
     IMAGE_MODE = ImageMode(mode_str)
@@ -45,15 +62,14 @@ except ValueError:
         f"잘못된 IMAGE_MODE: {mode_str}. 선택 가능한 IMAGE_MODE: {[m.value for m in ImageMode]}"
     )
 
-valid_model_names = set(["ViT-B/32", "ViT-L/14"])
-
-MODEL_NAME = os.getenv("MODEL_NAME", "ViT-B/32")
-if MODEL_NAME not in valid_model_names:
+try:
+    MODEL_NAME = ModelName(MODEL_NAME)
+except ValueError:
     raise ValueError(
-        f"잘못된 MODEL_NAME: {MODEL_NAME}. 선택 가능한 MODEL_NAME: {list(valid_model_names)}"
+        f"잘못된 MODEL_NAME: {MODEL_NAME}. 선택 가능한 MODEL_NAME: {[m.value for m in ModelName]}"
     )
 
-MODEL_BASE_PATH = f"app/model/{MODEL_NAME}"
+MODEL_BASE_PATH = f"app/model/{MODEL_NAME.value}"
 CATEGORY_FEATURES_FILENAME = "category_features.pt"
 QUALITY_FEATURES_FILENAME = "quality_features.pt"
 AESTHETIC_REGRESSOR_FILENAME = "aesthetic_regressor.pth"
