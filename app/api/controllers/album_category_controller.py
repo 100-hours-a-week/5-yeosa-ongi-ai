@@ -12,10 +12,8 @@ from app.utils.logging_decorator import log_exception, log_flow
 
 @log_flow
 async def categorize_controller(req: ImageRequest, request: Request):
-    # TODO: text_features를 불러오는 부분은 app.state에 저장해놓도록 수정
-    data = torch.load("app/model/category_features.pt", weights_only=True)
-    translated_categories = data["translated_categories"]
-    text_features = data["text_features"]
+    translated_categories = request.app.state.translated_categories
+    text_features = request.app.state.text_features
     
     loop = request.app.state.loop
 
