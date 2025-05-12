@@ -31,8 +31,11 @@ async def quality_controller(req: ImageRequest, request: Request):
 
     image_features = torch.stack(image_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
+    
+    text_features = request.app.state.quality_text_features
+    fields = request.app.state.quality_fields
 
-    task_func = partial(get_low_quality_images, image_names, image_features)
+    task_func = partial(get_low_quality_images, image_names, image_features, text_features, fields)
     result = await loop.run_in_executor(None, task_func)
 
     return {"message": "success", "data": result}

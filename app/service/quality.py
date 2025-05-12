@@ -58,25 +58,6 @@ def get_field_scores(
 
 
 @log_exception
-def load_clip_iqa_prompt_features(path: str):
-    """
-    저장된 .pt 파일에서 CLIP-IQA 프롬프트 정보를 불러옵니다.
-
-    인자:
-        path (str): 프롬프트 피처가 저장된 파일 경로 (예: 'clip_iqa_prompt_features.pt')
-
-    반환:
-        Tuple:
-            prompt_pairs (List[Tuple[str, str]]): positive/negative 텍스트 프롬프트 쌍
-            text_features (Tensor): [N, 2, 512] 텍스트 피처 쌍
-            fields (List[str]): 각 프롬프트 쌍에 해당하는 필드 이름
-
-    """
-    data = torch.load(path)
-    return data["text_features"], data["fields"]
-
-
-@log_exception
 def evaluate_dual_threshold(
     scores,
     field_a,
@@ -125,7 +106,7 @@ def evaluate_dual_threshold(
 
 
 @log_exception
-def get_low_quality_images(image_names, image_features):
+def get_low_quality_images(image_names, image_features, text_features, fields):
     """
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
 
@@ -137,9 +118,6 @@ def get_low_quality_images(image_names, image_features):
         List[str]: 저품질 이미지 이름 리스트
 
     """
-    text_features, fields = load_clip_iqa_prompt_features(
-        "app/model/clip_iqa_prompt_features.pt"
-    )
     scores = get_field_scores(image_features, text_features, fields)
     results = evaluate_dual_threshold(
         scores,

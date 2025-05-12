@@ -22,6 +22,7 @@ from app.model.yolo_detector_loader import load_yolo_detector
 from app.core.task_queue import SerialTaskQueue
 from app.utils.image_loader import get_image_loader
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
@@ -31,9 +32,12 @@ async def lifespan(app: FastAPI):
     arcface_model = load_arcface_model()
     yolo_detector = load_yolo_detector()
     loop = asyncio.get_running_loop()
-    data = torch.load(f"app/model/{model_name}/category_features.pt", weights_only=True)
-    translated_categories = data["translated_categories"]
-    category_text_features = data["text_features"]
+    category_data = torch.load(f"app/model/{model_name}/category_features.pt", weights_only=True)
+    translated_categories = category_data["translated_categories"]
+    category_text_features = category_data["text_features"]
+    quality_data = torch.load(f"app/model/{model_name}/quality_features.pt", weights_only=True)
+    quality_text_features = quality_data["text_features"]
+    quality_fields = quality_data["fields"]
 
     app.state.clip_model = clip_model
     app.state.clip_preprocess = clip_preprocess
@@ -50,6 +54,8 @@ async def lifespan(app: FastAPI):
     app.state.loop = loop
     app.state.translated_categories = translated_categories
     app.state.category_text_features = category_text_features
+    app.state.quality_text_features = quality_text_features
+    app.state.quality_fields = quality_fields
     yield
 
 app = FastAPI(lifespan=lifespan)
