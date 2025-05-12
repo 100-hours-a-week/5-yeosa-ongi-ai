@@ -21,8 +21,22 @@ class ImageMode(str, Enum):
     GCS = "gcs"
     S3 = "s3"
 
+class AppEnv(str, Enum):
+    """
+    이미지를 어디서 로드할지 선택하는 모드입니다.
+
+    Attributes:
+        LOCAL: 로컬 파일 시스템에서 이미지를 로드합니다.
+        GCS: Google Cloud Storage에서 이미지를 로드합니다.
+        S3: AWS S3에서 이미지를 로드합니다
+
+    """
+
+    PROD = "prod"
+    DEV = "dev"
 
 mode_str = os.getenv("IMAGE_MODE", "s3")
+app_env = os.getenv("APP_ENV", "prod")
 
 try:
     IMAGE_MODE = ImageMode(mode_str)
@@ -30,3 +44,11 @@ except ValueError:
     raise ValueError(
         f"잘못된 IMAGE_MODE: {mode_str}. 선택 가능한 IMAGE_MODE: {[m.value for m in ImageMode]}"
     )
+
+try:
+    APP_ENV = AppEnv(app_env)
+except ValueError:
+    raise ValueError(
+        f"잘못된 APP_ENV: {app_env}. 선택 가능한 APP_ENV: {[m.value for m in AppEnv]}"
+    )
+
