@@ -14,9 +14,9 @@ class AestheticRegressor(torch.nn.Module):
         return self.fc(x).squeeze(1)
 
 
-def loader_aesthetic_regressor():
+def loader_aesthetic_regressor(model_name='ViT-B/32'):
     global _aesthetic_regressor
     if _aesthetic_regressor is None:
-        _aesthetic_regressor = AestheticRegressor()
+        _aesthetic_regressor = AestheticRegressor(model_name)
         _aesthetic_regressor.eval()
     return _aesthetic_regressor

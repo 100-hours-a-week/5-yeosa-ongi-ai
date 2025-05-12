@@ -25,11 +25,16 @@ from app.utils.image_loader import get_image_loader
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
-    clip_model, clip_preprocess = load_clip_model()
-    aesthetic_regressor = loader_aesthetic_regressor()
+    model_name = 'ViT-B/32'
+    clip_model, clip_preprocess = load_clip_model(model_name)
+    aesthetic_regressor = loader_aesthetic_regressor(model_name)
     arcface_model = load_arcface_model()
     yolo_detector = load_yolo_detector()
     loop = asyncio.get_running_loop()
+    data = torch.load(f"app/model/{model_name}/category_features.pt", weights_only=True)
+    translated_categories = data["translated_categories"]
+    text_features = data["text_features"]
+    
 
     app.state.clip_model = clip_model
     app.state.clip_preprocess = clip_preprocess
@@ -44,6 +49,8 @@ async def lifespan(app: FastAPI):
     app.state.postprocess_queue.start()
     app.state.people_clustering_queue.start()
     app.state.loop = loop
+    app.state.translated_categories = translated_categories
+    app.state.text_features = text_features
     yield
 
 app = FastAPI(lifespan=lifespan)
