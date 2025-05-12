@@ -37,7 +37,8 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
 
     # 1. 이미지 로드
     image_loader = request.app.state.image_loader
-    images = await image_loader.load_images(filenames)
+
+    images = await image_loader.load_images(image_refs)
 
     logger.debug(
         "이미지 로드 완료",
