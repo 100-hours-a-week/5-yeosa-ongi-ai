@@ -10,6 +10,4 @@ router = APIRouter(tags=["embedding"])
 @router.post("", status_code=201)
 @log_flow
 async def embed(req: ImageRequest, request: Request):
-    return await request.app.state.embedding_queue.enqueue(
-        lambda: embed_controller(req, request)
-    )
+    return await embed_controller(req, request)
