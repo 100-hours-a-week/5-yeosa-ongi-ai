@@ -7,7 +7,7 @@ class AestheticRegressor(torch.nn.Module):
     def __init__(self, model_name='ViT-B/32'):
         super().__init__()
         self.fc = torch.nn.Linear(512 if model_name == 'ViT-B/32' else 768, 1)
-        self.load_state_dict(torch.load(f"app/model/aesthetic_regressor_{model_name.split('/')[0]}.pth"))
+        self.load_state_dict(torch.load(f"app/model/aesthetic_regressor_{'_'.join(model_name.split('/'))}.pth"))
 
     def forward(self, x):
         return self.fc(x).squeeze(1)
