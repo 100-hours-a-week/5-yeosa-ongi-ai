@@ -1,109 +1,140 @@
+import logging
+from typing import Dict, List, Literal, Tuple
+
 import torch
 import torch.nn.functional as F
 
 from app.utils.logging_decorator import log_exception, log_flow
 
+logger = logging.getLogger(__name__)
+
+# 상수 정의
+DEFAULT_WEIGHT_B = 0.25
+DEFAULT_THRESHOLD_COMBINED = 0.490
+DEFAULT_THRESHOLD_A = 0.488
+
+ResultType = Literal["both", "field_a_only", "combined_only", "neither"]
+
 
 @log_flow
-def compute_pairwise_score(image_features, text_pair):
+def compute_pairwise_score(
+    image_features: torch.Tensor,
+    text_pair: torch.Tensor,
+) -> torch.Tensor:
     """
     이미지 임베딩과 두 개의 텍스트 임베딩 쌍(positive, negative)에 대해 softmax를 통해 positive 점수를 계산합니다.
 
-    인자:
-        image_features (Tensor): [B, 512] 이미지 피처 (정규화되어 있다고 가정)
-        text_pair (Tensor): [2, 512] 텍스트 쌍 (positive, negative, 정규화되어 있다고 가정)
+    Args:
+        image_features: [B, 512] 이미지 피처 (정규화되어 있다고 가정)
+        text_pair: [2, 512] 텍스트 쌍 (positive, negative, 정규화되어 있다고 가정)
 
-    반환:
-        Tensor: [B] 각 이미지에 대한 positive softmax 점수
+    Returns:
+        torch.Tensor: [B] 각 이미지에 대한 positive softmax 점수
 
     """
+    logger.debug(
+        "pairwise 점수 계산 시작",
+        extra={"batch_size": image_features.size(0)},
+    )
+
     sim = image_features @ text_pair.T  # 코사인 유사도 [B, 2]
     probs = F.softmax(sim, dim=-1)  # softmax 적용
-    return probs[:, 0]  # positive 클래스의 확률 반환
+    result = probs[:, 0]  # positive 클래스의 확률 반환
+
+    logger.debug(
+        "pairwise 점수 계산 완료",
+        extra={"batch_size": len(result)},
+    )
+
+    return result
 
 
 @log_flow
 def get_field_scores(
     image_features: torch.Tensor,
     text_features: torch.Tensor,
-    fields: list[str],
-) -> list[dict[str, float]]:
+    fields: List[str],
+) -> List[Dict[str, float]]:
     """
     각 이미지에 대해 모든 필드의 positive 점수를 계산합니다.
 
-    인자:
-        image_features (Tensor): [B, 512] (정규화된 이미지 임베딩, B: Batch_size)
-        text_features (Tensor): [N, 2, 512] (정규화된 텍스트 쌍, N: Scoring 하고자 하는 Field 개수(Sharp, Contrast 등))
-        fields (List[str]): 각 필드 이름
+    Args:
+        image_features: [B, 512] 정규화된 이미지 임베딩 (B: Batch_size)
+        text_features: [N, 2, 512] 정규화된 텍스트 쌍 (N: Scoring 하고자 하는 Field 개수)
+        fields: 각 필드 이름 리스트
 
-    반환:
+    Returns:
         List[Dict[str, float]]: 각 이미지별 필드 이름 → 점수 딕셔너리
 
     """
+    logger.info(
+        "필드 점수 계산 시작",
+        extra={
+            "batch_size": image_features.size(0),
+            "field_count": len(fields),
+        },
+    )
+
     B, N = image_features.size(0), text_features.size(0)
-    scores = [
-        dict() for _ in range(B)
-    ]  # 이미지별 점수를 저장할 딕셔너리 리스트
+    scores = [dict() for _ in range(B)]  # 이미지별 점수를 저장할 딕셔너리 리스트
 
     for i in range(N):  # 필드별로
-        pos_scores = compute_pairwise_score(
-            image_features, text_features[i]
-        )  # [B]
+        logger.debug(
+            "필드 처리 중",
+            extra={"field": fields[i], "progress": f"{i+1}/{N}"},
+        )
+
+        pos_scores = compute_pairwise_score(image_features, text_features[i])  # [B]
         for b in range(B):
-            scores[b][fields[i]] = pos_scores[
-                b
-            ].item()  # field 이름 → 점수로 저장
+            scores[b][fields[i]] = pos_scores[b].item()  # field 이름 → 점수로 저장
+
+    logger.info(
+        "필드 점수 계산 완료",
+        extra={"processed_fields": len(fields)},
+    )
 
     return scores
 
 
 @log_exception
-def load_clip_iqa_prompt_features(path: str):
-    """
-    저장된 .pt 파일에서 CLIP-IQA 프롬프트 정보를 불러옵니다.
-
-    인자:
-        path (str): 프롬프트 피처가 저장된 파일 경로 (예: 'clip_iqa_prompt_features.pt')
-
-    반환:
-        Tuple:
-            prompt_pairs (List[Tuple[str, str]]): positive/negative 텍스트 프롬프트 쌍
-            text_features (Tensor): [N, 2, 512] 텍스트 피처 쌍
-            fields (List[str]): 각 프롬프트 쌍에 해당하는 필드 이름
-
-    """
-    data = torch.load(path)
-    return data["text_features"], data["fields"]
-
-
-@log_exception
 def evaluate_dual_threshold(
-    scores,
-    field_a,
-    field_b,
-    weight_b=0.25,
-    threshold_combined=0.490,
-    threshold_a=0.488,
-):
+    scores: List[Dict[str, float]],
+    field_a: str,
+    field_b: str,
+    weight_b: float = DEFAULT_WEIGHT_B,
+    threshold_combined: float = DEFAULT_THRESHOLD_COMBINED,
+    threshold_a: float = DEFAULT_THRESHOLD_A,
+) -> List[ResultType]:
     """
     두 가지 기준을 바탕으로 각 이미지의 통과 여부를 판별합니다:
 
     - field_a는 단일 기준을 통과해야 함 (ex. good ≥ 0.488)
     - field_a와 field_b의 가중 평균은 통합 기준을 통과해야 함 (ex. good+sharp ≥ 0.490)
 
-    인자:
-        scores (List[Dict[str, float]]): 각 이미지의 필드별 점수
-        field_a (str): 단일 기준 필드 이름 (예: 'good')
-        field_b (str): 보조 필드 이름 (예: 'sharp')
-        weight_b (float): field_b에 부여할 가중치 (나머지는 field_a)
-        threshold_combined (float): 가중 평균에 적용할 통합 기준
-        threshold_a (float): field_a 단일 기준 점수
+    Args:
+        scores: 각 이미지의 필드별 점수
+        field_a: 단일 기준 필드 이름 (예: 'good')
+        field_b: 보조 필드 이름 (예: 'sharp')
+        weight_b: field_b에 부여할 가중치 (기본값: 0.25)
+        threshold_combined: 가중 평균에 적용할 통합 기준 (기본값: 0.490)
+        threshold_a: field_a 단일 기준 점수 (기본값: 0.488)
 
-    반환:
-        List[str]: 이미지별 판별 결과 ('both', 'field_a_only', 'combined_only', 'neither')
+    Returns:
+        List[ResultType]: 이미지별 판별 결과
 
     """
-    results = []
+    logger.info(
+        "이중 임계값 평가 시작",
+        extra={
+            "field_a": field_a,
+            "field_b": field_b,
+            "weight_b": weight_b,
+            "threshold_combined": threshold_combined,
+            "threshold_a": threshold_a,
+        },
+    )
+
+    results: List[ResultType] = []
     for s in scores:
         score_a = s[field_a]  # 단일 기준 필드
         score_b = s[field_b]  # 보조 필드
@@ -121,34 +152,65 @@ def evaluate_dual_threshold(
         else:
             results.append("neither")
 
+    logger.info(
+        "이중 임계값 평가 완료",
+        extra={
+            "total_images": len(results),
+            "passed_both": results.count("both"),
+            "passed_a_only": results.count("field_a_only"),
+            "passed_combined_only": results.count("combined_only"),
+            "failed": results.count("neither"),
+        },
+    )
+
     return results
 
 
 @log_exception
-def get_low_quality_images(image_names, image_features):
+def get_low_quality_images(
+    image_names: List[str],
+    image_features: torch.Tensor,
+    text_features: torch.Tensor,
+    fields: List[str],
+) -> List[str]:
     """
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
 
-    인자:
-        image_names (List[str]): 이미지 이름 리스트 (B 길이)
-        pass_results (List[str]): 평가 결과 ('both', 'field_a_only', 'combined_only', 'neither')
+    Args:
+        image_names: 이미지 이름 리스트
+        image_features: 이미지 임베딩 텐서
+        text_features: 텍스트 임베딩 텐서
+        fields: 필드 이름 리스트
 
-    반환:
+    Returns:
         List[str]: 저품질 이미지 이름 리스트
 
     """
-    text_features, fields = load_clip_iqa_prompt_features(
-        "app/model/clip_iqa_prompt_features.pt"
+    logger.info(
+        "저품질 이미지 검색 시작",
+        extra={"total_images": len(image_names)},
     )
+
     scores = get_field_scores(image_features, text_features, fields)
     results = evaluate_dual_threshold(
         scores,
         field_a="sharp",
         field_b="good",
-        weight_b=0.25,
-        threshold_combined=0.490,
-        threshold_a=0.488,
+        weight_b=DEFAULT_WEIGHT_B,
+        threshold_combined=DEFAULT_THRESHOLD_COMBINED,
+        threshold_a=DEFAULT_THRESHOLD_A,
     )
-    return [
+
+    low_quality_images = [
         name for name, result in zip(image_names, results) if result != "both"
     ]
+
+    logger.info(
+        "저품질 이미지 검색 완료",
+        extra={
+            "total_images": len(image_names),
+            "low_quality_count": len(low_quality_images),
+        },
+    )
+
+    return low_quality_images

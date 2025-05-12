@@ -45,10 +45,22 @@ except ValueError:
         f"잘못된 IMAGE_MODE: {mode_str}. 선택 가능한 IMAGE_MODE: {[m.value for m in ImageMode]}"
     )
 
+valid_model_names = set(["ViT-B/32", "ViT-L/14"])
+
+MODEL_NAME = os.getenv("MODEL_NAME", "ViT-B/32")
+if MODEL_NAME not in valid_model_names:
+    raise ValueError(
+        f"잘못된 MODEL_NAME: {MODEL_NAME}. 선택 가능한 MODEL_NAME: {list(valid_model_names)}"
+    )
+
+MODEL_BASE_PATH = f"app/model/{MODEL_NAME}"
+CATEGORY_FEATURES_FILENAME = "category_features.pt"
+QUALITY_FEATURES_FILENAME = "quality_features.pt"
+AESTHETIC_REGRESSOR_FILENAME = "aesthetic_regressor.pth"
+
 try:
     APP_ENV = AppEnv(app_env)
 except ValueError:
     raise ValueError(
         f"잘못된 APP_ENV: {app_env}. 선택 가능한 APP_ENV: {[m.value for m in AppEnv]}"
     )
-
