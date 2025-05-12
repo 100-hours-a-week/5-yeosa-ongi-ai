@@ -14,13 +14,14 @@ def setup_exception_handler(app: FastAPI):
         app (FastAPI): 예외 미들웨어를 설정할 FastAPI 인스턴스
 
     """
+
     @app.middleware("http")
     async def catch_exceptions_middleware(request: Request, call_next):
         try:
             response = await call_next(request)
             return response
         except Exception:
-            logger.exception("middleware error")
+            logger.error("middleware error")
             return JSONResponse(
                 status_code=500, content={"detail": "Internal Server Error"}
             )
