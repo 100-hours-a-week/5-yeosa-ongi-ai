@@ -75,7 +75,7 @@ async def categorize_controller(req: ImageRequest, request: Request) -> JSONResp
 
     # 6. 응답 형식 변환
     response = [
-        ImageCategoryGroup(category=category, images=images)
+        {"category": category, "images": images}
         for category, images in categorized.items()
     ]
 
