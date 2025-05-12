@@ -34,7 +34,6 @@ async def lifespan(app: FastAPI):
     data = torch.load(f"app/model/{model_name}/category_features.pt", weights_only=True)
     translated_categories = data["translated_categories"]
     text_features = data["text_features"]
-    
 
     app.state.clip_model = clip_model
     app.state.clip_preprocess = clip_preprocess
