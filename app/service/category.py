@@ -125,6 +125,7 @@ def select_representative_categories(
 
     Returns:
         상위 k개 태그와 점수 [(태그, 점수), ...]
+
     """
     # 점수 기준으로 정렬하여 상위 k개 선택
     return sorted(tag_representative_scores, key=lambda x: x[1], reverse=True)[:k]

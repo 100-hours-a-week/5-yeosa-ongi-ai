@@ -44,11 +44,3 @@ def find_duplicate_groups(
             groups[label].append(image_names[idx])
 
     return list(groups.values())
-
-
-if __name__ == "__main__":
-    imagedata = torch.load("image_features.pt", weights_only=True)
-    image_names = imagedata["image_names"]
-    image_features = imagedata["image_features"]
-    duplicate_image_groups = find_duplicate_groups(image_features, image_names)
-    print("done")
