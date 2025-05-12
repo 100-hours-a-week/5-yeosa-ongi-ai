@@ -1,13 +1,15 @@
+aiofiles==24.1.0
 cachetools==5.3.3
 fastapi==0.115.12
 numpy==2.2.5
+aioboto3==14.3.0
 boto3==1.38.13
 Pillow==11.2.1
 pydantic==2.11.3
 scikit_learn==1.6.1
 uvicorn==0.34.0
 python-dotenv==1.1.0
-google-cloud-storage==3.1.0
+gcloud-aio-storage==9.4.0
 loguru==0.7.3
 certifi==2025.1.31
 charset-normalizer==3.4.1
@@ -21,6 +23,7 @@ Jinja2==3.1.6
 joblib==1.4.2
 kiwisolver==1.4.8
 MarkupSafe==3.0.2
+PyTurboJPEG==1.7.7
 matplotlib==3.10.1
 mpmath==1.3.0
 networkx==3.4.2
