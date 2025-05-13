@@ -16,7 +16,9 @@ async def embed_controller(req: ImageRequest, request: Request):
 
     clip_model = request.app.state.clip_model
     clip_preprocess = request.app.state.clip_preprocess
+    # queue = request.app.state.embedding_queue
     loop = request.app.state.loop
+
     task_func = partial(
         embed_images,
         clip_model,
@@ -24,12 +26,11 @@ async def embed_controller(req: ImageRequest, request: Request):
         images,
         filenames,
         batch_size=16,
-        device="cpu"
+        device="cpu",
     )
 
-    await loop.run_in_executor(
-        None,
-        task_func
-    )
+    await loop.run_in_executor(None, task_func)
+
+    # await queue.enqueue(task_func)
 
     return {"message": "success", "data": None}

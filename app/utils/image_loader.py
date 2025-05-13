@@ -1,4 +1,5 @@
 import os
+import requests
 import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -14,7 +15,7 @@ from gcloud.aio.storage import Storage
 import asyncio
 from functools import partial
 from botocore.config import Config
-from app.config.settings import ImageMode
+from app.config.settings import ImageMode, APP_ENV, AppEnv
 
 load_dotenv()
 
@@ -42,8 +43,8 @@ for name, value in required_envs.items():
     if value is None:
         raise EnvironmentError(f"{name}은(는) .env에 설정되어야 합니다.")
 
-GCS_DOWNLOAD_SEMAPHORE_SIZE = 10
-gcs_download_semaphore = asyncio.Semaphore(GCS_DOWNLOAD_SEMAPHORE_SIZE)
+DOWNLOAD_SEMAPHORE_SIZE = 10
+download_semaphore = asyncio.Semaphore(DOWNLOAD_SEMAPHORE_SIZE)
 
 # 전역 스레드 풀
 executor = ThreadPoolExecutor(max_workers=10)
@@ -87,7 +88,7 @@ class GCSImageLoader(BaseImageLoader):
         self.bucket_name = bucket_name
 
     async def _download(self, file_name: str) -> bytes:
-        async with gcs_download_semaphore:
+        async with download_semaphore:
             start = time.time()
             image_bytes = await self.client.download(
                 bucket=self.bucket_name, object_name=file_name
@@ -149,10 +150,28 @@ class S3ImageLoader(BaseImageLoader):
             self.client = None
 
     async def _download(self, file_name: str) -> bytes:
-        response = await self.client.get_object(
-            Bucket=self.bucket_name, Key=file_name
-        )
-        return await response["Body"].read()
+        async with download_semaphore:
+            start = time.time()
+            if APP_ENV == AppEnv.PROD:
+                try:
+                    response = requests.get(file_name, timeout=5)
+                    response.raise_for_status()
+                    image_bytes = response.content
+                    end = time.time()
+                    print(f" S3 (URL 직접) 다운로드 시간 : {end - start}")
+                    return image_bytes
+                except requests.RequestException as e:
+                    print(f" S3 URL 요청 실패: {file_name}, 오류: {e}")
+                    raise
+            else:
+                # 기본 S3 방식
+                response = await self.client.get_object(
+                    Bucket=self.bucket_name, Key=file_name
+                )
+                image_bytes = await response["Body"].read()
+                end = time.time()
+                print(f" S3 다운로드 시간 : {end - start}")
+                return image_bytes
 
     async def _process_single_file(self, filename: str) -> np.ndarray:
         loop = asyncio.get_running_loop()
