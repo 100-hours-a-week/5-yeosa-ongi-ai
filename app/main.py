@@ -1,4 +1,7 @@
 import os
+import asyncio
+from contextlib import asynccontextmanager
+
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -6,82 +9,57 @@ os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ["JOBLIB_NUM_THREADS"] = "1"
 
-from itertools import chain
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 import torch
-from model.clip_loader import load_clip_model
-from model.aesthetic_regressor import loader_aesthetic_regressor
-from utils.image_loader import load_images
-from core.cache import get_cached_embedding, get_cached_embeddings_parallel
-from schemas.album_schema import ImageRequest, CategoryScoreRequest, ImageCategoryGroup
-from service.embedding import embed_images
-from service.category import categorize_images
-from service.duplicate import find_duplicate_groups
-from service.highlight import estimate_highlight_score
+from fastapi import FastAPI
 
-app = FastAPI()
+from app.api import api_router
+from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
+from app.middleware.error_handler import setup_exception_handler
+from app.model.aesthetic_regressor import load_aesthetic_regressor
+from app.model.arcface_loader import load_arcface_model
+from app.model.clip_loader import load_clip_model
+from app.model.yolo_detector_loader import load_yolo_detector
+from app.core.task_queue import SerialTaskQueue
+from app.utils.image_loader import get_image_loader
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
+    clip_model, clip_preprocess = load_clip_model(MODEL_NAME)
+    aesthetic_regressor = load_aesthetic_regressor(MODEL_NAME)
+    arcface_model = load_arcface_model()
+    yolo_detector = load_yolo_detector()
+    loop = asyncio.get_running_loop()
+    category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=True)
+    translated_categories = category_data["translated_categories"]
+    category_text_features = category_data["text_features"]
+    quality_data = torch.load(os.path.join(MODEL_BASE_PATH, QUALITY_FEATURES_FILENAME), weights_only=True)
+    quality_text_features = quality_data["text_features"]
+    quality_fields = quality_data["fields"]
+
+    app.state.clip_model = clip_model
+    app.state.clip_preprocess = clip_preprocess
+    app.state.aesthetic_regressor = aesthetic_regressor
+    app.state.arcface_model = arcface_model
+    app.state.yolo_detector = yolo_detector
+    app.state.image_loader = get_image_loader(IMAGE_MODE)
+    app.state.embedding_queue = SerialTaskQueue()
+    app.state.postprocess_queue = SerialTaskQueue()
+    app.state.people_clustering_queue = SerialTaskQueue()
+    app.state.embedding_queue.start()
+    app.state.postprocess_queue.start()
+    app.state.people_clustering_queue.start()
+    app.state.loop = loop
+    app.state.translated_categories = translated_categories
+    app.state.category_text_features = category_text_features
+    app.state.quality_text_features = quality_text_features
+    app.state.quality_fields = quality_fields
+    yield
+
+app = FastAPI(lifespan=lifespan)
 torch.set_num_threads(1)
 
-clip_model = None
-clip_preprocess = None
-aesthetic_regressor = None
+setup_exception_handler(app)
 
-@app.on_event("startup")
-def load():
-    global clip_model, clip_preprocess, aesthetic_regressor, images
-    clip_model, clip_preprocess = load_clip_model()
-    aesthetic_regressor = loader_aesthetic_regressor()
-
-@app.post("/api/albums/embedding", status_code=201)
-def embed(req: ImageRequest):
-    global clip_model, clip_preprocess
-    filenames = req.images
-    images = load_images(filenames)
-    embed_images(clip_model, clip_preprocess, images, filenames, batch_size=16, device='cpu')
-    return {"message": "success", "data": None}
-    
-@app.post("/api/albums/categories", status_code=201)
-def categorize(req: ImageRequest):
-    data = torch.load("/Users/images/category_features.pt", weights_only=True)
-    categories = data["categories"]
-    text_features = data["text_features"]
-    image_names = req.images
-    image_features, missing_keys = get_cached_embeddings_parallel(image_names)
-    if len(missing_keys) > 0:
-        return JSONResponse(status_code=428, content={"message": "embedding_required", "data": missing_keys})
-    image_features = torch.stack([get_cached_embedding(image_name) for image_name in image_names])
-    image_features /= image_features.norm(dim=-1, keepdim=True)    
-    categorized = categorize_images(image_features.cpu(), image_names, text_features.cpu(), categories)
-    response = [ImageCategoryGroup(category=category, images=images) for category, images in categorized.items()]
-    
-    return {"message": "success", "data": response}
-    
-@app.post("/api/albums/duplicates")
-def duplicate(req: ImageRequest):
-    image_names = req.images
-    image_features, missing_keys = get_cached_embeddings_parallel(image_names)
-    if len(missing_keys) > 0:
-        return JSONResponse(status_code=428, content={"message": "embedding_required", "data": missing_keys})
-    image_features = torch.stack([get_cached_embedding(image_name) for image_name in image_names])
-    image_features /= image_features.norm(dim=-1, keepdim=True)    
-    duplicate_image_groups = find_duplicate_groups(image_features, image_names)
-    return {"message": "success", "data": duplicate_image_groups}
-    
-@app.post("/api/albums/scores")
-def highlight_scoring(req: CategoryScoreRequest):    
-    categories = req.categories
-    all_images = list(chain.from_iterable(category.images for category in categories))
-    image_features, missing_keys = get_cached_embeddings_parallel(all_images)
-    if len(missing_keys) > 0:
-        return JSONResponse(status_code=428, content={"message": "embedding_required", "data": missing_keys})
-    embedding_map = {image: feature for image, feature in zip(all_images, image_features)}
-        
-    data = []
-    for category in categories:
-        image_features = torch.stack([embedding_map[image] for image in category.images])
-        image_features /= image_features.norm(dim=-1, keepdim=True)    
-        scores = estimate_highlight_score(image_features, category.images, aesthetic_regressor)
-        data.append({"category": category.category, "images": scores})
-        
-    return JSONResponse(status_code=201, content={"message": "success", "data": data})
+app.include_router(api_router)

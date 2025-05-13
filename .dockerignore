@@ -4,3 +4,6 @@ __pycache__/
 *.pyd
 .DS_Store
 images/
+.venv
+.vscode/settings.json
+**/insight-face-v3.pt

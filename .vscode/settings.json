@@ -1,0 +1,12 @@
+{
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff", 
+    "python.formatting.provider": "black",
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.typeCheckingMode": "basic"
+}
