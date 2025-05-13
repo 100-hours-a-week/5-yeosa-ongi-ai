@@ -3,9 +3,7 @@ cachetools==5.3.3
 fastapi==0.115.12
 numpy==2.2.5
 aioboto3==14.3.0
-boto3==1.38.13
 Pillow==11.2.1
-boto3==1.38.13
 pydantic==2.11.3
 scikit_learn==1.6.1
 uvicorn==0.34.0
