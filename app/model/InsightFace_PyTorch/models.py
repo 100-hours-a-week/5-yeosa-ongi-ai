@@ -9,22 +9,34 @@ from torch.nn import Parameter
 
 from app.model.InsightFace_PyTorch.config import device, num_classes
 
-__all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
-           'resnet152']
+__all__ = [
+    "ResNet",
+    "resnet18",
+    "resnet34",
+    "resnet50",
+    "resnet101",
+    "resnet152",
+]
 
 model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    "resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
+    "resnet34": "https://download.pytorch.org/models/resnet34-333f7ec4.pth",
+    "resnet50": "https://download.pytorch.org/models/resnet50-19c8e357.pth",
+    "resnet101": "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
+    "resnet152": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
 }
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes,
+        out_planes,
+        kernel_size=3,
+        stride=stride,
+        padding=1,
+        bias=False,
+    )
 
 
 class BasicBlock(nn.Module):
@@ -66,8 +78,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -106,7 +119,7 @@ class SEBlock(nn.Module):
             nn.Linear(channel, channel // reduction),
             nn.PReLU(),
             nn.Linear(channel // reduction, channel),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -119,7 +132,9 @@ class SEBlock(nn.Module):
 class IRBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, use_se=True):
+    def __init__(
+        self, inplanes, planes, stride=1, downsample=None, use_se=True
+    ):
         super(IRBlock, self).__init__()
         self.bn0 = nn.BatchNorm2d(inplanes)
         self.conv1 = conv3x3(inplanes, inplanes)
@@ -155,7 +170,6 @@ class IRBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-
     def __init__(self, block, layers, use_se=True, im_size=112):
         self.inplanes = 64
         self.use_se = use_se
@@ -180,7 +194,9 @@ class ResNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.xavier_normal_(m.weight)
-            elif isinstance(m, nn.BatchNorm2d) or isinstance(m, nn.BatchNorm1d):
+            elif isinstance(m, nn.BatchNorm2d) or isinstance(
+                m, nn.BatchNorm1d
+            ):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
@@ -191,13 +207,22 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, use_se=self.use_se))
+        layers.append(
+            block(
+                self.inplanes, planes, stride, downsample, use_se=self.use_se
+            )
+        )
         self.inplanes = planes
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, use_se=self.use_se))
@@ -217,7 +242,7 @@ class ResNet(nn.Module):
 
         x = self.bn2(x)
         x = self.dropout(x)
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         x = self.bn3(x)
 
@@ -227,21 +252,27 @@ class ResNet(nn.Module):
 def resnet18(args, **kwargs):
     model = ResNet(IRBlock, [2, 2, 2, 2], use_se=args.use_se, **kwargs)
     if args.pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
     return model
 
 
 def resnet34(args, **kwargs):
     model = ResNet(IRBlock, [3, 4, 6, 3], use_se=args.use_se, **kwargs)
     if args.pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet34"]))
     return model
 
 
 def resnet50(args, **kwargs):
-    model = ResNet(IRBlock, [3, 4, 6, 3], use_se=args.use_se, im_size=args.im_size, **kwargs)
+    model = ResNet(
+        IRBlock,
+        [3, 4, 6, 3],
+        use_se=args.use_se,
+        im_size=args.im_size,
+        **kwargs,
+    )
     if args.pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet50"]))
     return model
 
 
@@ -255,7 +286,7 @@ def resnet101(args, **kwargs):
 def resnet152(args, **kwargs):
     model = ResNet(IRBlock, [3, 8, 36, 3], use_se=args.use_se, **kwargs)
     if args.pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet152"]))
     return model
 
 
