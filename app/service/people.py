@@ -11,6 +11,16 @@ from torch import Tensor
 
 from app.utils.logging_decorator import log_exception, log_flow
 
+# Optional cuML import
+try:
+    from cuml.cluster import DBSCAN as GPU_DBSCAN
+
+    use_gpu_dbscan = True
+except ImportError:
+    from sklearn.cluster import DBSCAN as CPU_DBSCAN
+
+    use_gpu_dbscan = False
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -88,7 +98,11 @@ def cluster_faces(
     with torch.no_grad():
         embeddings = arcface(input_tensor).cpu().numpy()
 
-    dbscan = DBSCAN(eps=0.6, min_samples=2, metric="cosine")
+    if use_gpu_dbscan:
+        dbscan = GPU_DBSCAN(eps=0.6, min_samples=2, metric="cosine")
+    else:
+        dbscan = CPU_DBSCAN(eps=0.6, min_samples=2, metric="cosine")
+
     labels = dbscan.fit_predict(embeddings)
 
     # 클러스터별 평균 거리 기반 필터링
