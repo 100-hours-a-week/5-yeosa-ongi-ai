@@ -11,7 +11,7 @@ from torch import Tensor
 
 from app.utils.logging_decorator import log_exception, log_flow
 
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def preprocess(face: NDArray[np.uint8]) -> NDArray[np.float32]:
@@ -35,7 +35,10 @@ def preprocess(face: NDArray[np.uint8]) -> NDArray[np.float32]:
 
 @log_flow
 def cluster_faces(
-    images: list[Image.Image], file_names: list[str], arcface_model: Any, yolo_detector: Any
+    images: list[np.ndarray],
+    file_names: list[str],
+    arcface_model: Any,
+    yolo_detector: Any,
 ) -> list[list[str]]:
     """
     유사한 얼굴을 클러스터링합니다.
@@ -46,7 +49,7 @@ def cluster_faces(
     이후 클러스터의 평균 및 최대 거리 기준으로 신뢰도 있는 결과만 필터링합니다.
 
     Args:
-        images (list): PIL.Image 형태의 이미지 리스트.
+        images (list[np.ndarray]): RGB 이미지 배열 리스트 (H x W x 3)
         file_names (list[str]): 각 이미지에 대응하는 파일명 리스트.
         arcface_model: 얼굴 임베딩을 위한 ArcFace 모델.
         yolo_detector: 얼굴 검출 및 정렬을 위한 YOLO 기반 detector 객체.
@@ -59,14 +62,13 @@ def cluster_faces(
     detector = yolo_detector
     arcface = arcface_model
 
-    np_images = [np.array(img) for img in images]
-    bboxes_list, landmarks_list = detector.predict(np_images)
+    bboxes_list, landmarks_list = detector.predict(images)
 
     crops = []
     mapped_names = []
 
     for idx, (img, bboxes, landmarks) in enumerate(
-        zip(np_images, bboxes_list, landmarks_list)
+        zip(images, bboxes_list, landmarks_list)
     ):
         if len(landmarks) > 0:
             aligned = detector.align(img, landmarks)
@@ -77,10 +79,10 @@ def cluster_faces(
     if not crops:
         return []
 
-    input_tensor: Tensor = torch.tensor(
-        np.stack([preprocess(f) for f in crops]),
-        dtype=torch.float32,
-        device=device,
+    input_tensor = (
+        torch.from_numpy(np.stack([preprocess(f) for f in crops]))
+        .float()
+        .to(device)
     )
 
     with torch.no_grad():
@@ -114,8 +116,7 @@ def cluster_faces(
 
     # 유효 클러스터만 반영한 라벨로 재구성
     filtered_labels = np.array([
-        label if label in valid_labels else -1
-        for label in labels
+        label if label in valid_labels else -1 for label in labels
     ])
 
     # 결과 정리
@@ -125,5 +126,7 @@ def cluster_faces(
             result[f"person_{label}"].add(name)
 
     # 반환: 리스트로 변환
-    sorted_result = sorted(result.values(), key=lambda names: len(names), reverse=True)
+    sorted_result = sorted(
+        result.values(), key=lambda names: len(names), reverse=True
+    )
     return [list(names) for names in sorted_result]
