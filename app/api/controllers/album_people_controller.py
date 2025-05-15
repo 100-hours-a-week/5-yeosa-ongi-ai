@@ -1,5 +1,6 @@
 from functools import partial
 from typing import Any
+import asyncio
 
 from fastapi import Request
 
@@ -7,6 +8,8 @@ from app.schemas.album_schema import ImageRequest
 from app.service.people import cluster_faces
 from app.utils.logging_decorator import log_exception, log_flow
 
+PEOPLE_SEMAPHORE_SIZE = 5
+people_semaphore = asyncio.Semaphore(PEOPLE_SEMAPHORE_SIZE)
 
 @log_flow
 async def people_controller(req: ImageRequest, request: Request) -> dict[str, Any]:
@@ -39,6 +42,8 @@ async def people_controller(req: ImageRequest, request: Request) -> dict[str, An
     yolo_detector = request.app.state.yolo_detector
 
     task_func = partial(cluster_faces, images, filenames, arcface_model, yolo_detector)
-    clustering_result = await loop.run_in_executor(None, task_func)
+    
+    async with people_semaphore:
+        clustering_result = await loop.run_in_executor(None, task_func)
 
     return {"message": "success", "data": clustering_result}

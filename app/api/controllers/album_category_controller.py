@@ -71,6 +71,7 @@ async def categorize_controller(req: ImageRequest, request: Request) -> JSONResp
         text_features.cpu(),
         translated_categories,
     )
+    
     categorized = await loop.run_in_executor(None, task_func)
 
     # 6. 응답 형식 변환
