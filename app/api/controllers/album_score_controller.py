@@ -86,6 +86,7 @@ async def highlight_scoring_controller(req: CategoryScoreRequest, request: Reque
         embedding_map,
         aesthetic_regressor,
     )
+
     data = await loop.run_in_executor(None, task_func)
 
     # 6. 결과 로깅 및 응답

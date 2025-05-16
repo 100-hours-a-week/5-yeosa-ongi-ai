@@ -1,4 +1,4 @@
-import logging
+import logging, asyncio
 from functools import partial
 from typing import List, Tuple, Any
 
@@ -71,6 +71,7 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
         text_features,
         fields,
     )
+    
     result = await loop.run_in_executor(None, task_func)
 
     logger.info(

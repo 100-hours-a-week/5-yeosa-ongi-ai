@@ -66,6 +66,7 @@ async def duplicate_controller(req: ImageRequest, request: Request) -> JSONRespo
     image_features = torch.stack(image_features)
     
     task_func = partial(find_duplicate_groups, image_features, image_names)
+
     data = await loop.run_in_executor(None, task_func)
 
     # 4. 결과 로깅 및 응답

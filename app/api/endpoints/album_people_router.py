@@ -13,6 +13,4 @@ router = APIRouter(tags=["people"])
 @log_flow
 async def people(req: ImageRequest, request: Request) -> dict[str, Any]:
     """동일 인물 얼굴 클러스터링 요청을 people_controller에 전달합니다."""
-    return await request.app.state.people_clustering_queue.enqueue(
-        lambda: people_controller(req, request)
-    )
+    return await people_controller(req, request)
