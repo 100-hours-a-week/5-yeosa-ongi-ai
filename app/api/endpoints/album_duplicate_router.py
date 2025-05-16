@@ -8,6 +8,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["duplicate"])
 
+# TODO: semaphoe 개수 설정
 DUPLICATE_SEMAPHORE_SIZE = 5
 duplicate_semaphore = asyncio.Semaphore(DUPLICATE_SEMAPHORE_SIZE)
 

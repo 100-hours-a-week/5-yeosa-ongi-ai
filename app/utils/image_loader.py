@@ -18,6 +18,7 @@ from app.config.settings import ImageMode, APP_ENV, AppEnv
 
 load_dotenv()
 
+# TODO: semaphoe 개수 설정
 DECODE_SEMAPHORE_SIZE = 10
 decode_semaphore = asyncio.Semaphore(DECODE_SEMAPHORE_SIZE)
 

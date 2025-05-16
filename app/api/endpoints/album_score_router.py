@@ -10,6 +10,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["score"])
 
+# TODO: semaphoe 개수 설정
 SCORE_SEMAPHORE_SIZE = 5
 score_semaphore = asyncio.Semaphore(SCORE_SEMAPHORE_SIZE)
 

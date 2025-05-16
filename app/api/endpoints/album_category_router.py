@@ -8,6 +8,7 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["category"])
 
+# TODO: semaphoe 개수 설정
 CATEGORY_SEMAPHORE_SIZE = 5
 category_semaphore = asyncio.Semaphore(CATEGORY_SEMAPHORE_SIZE)
 
