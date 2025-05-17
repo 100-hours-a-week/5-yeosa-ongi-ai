@@ -19,8 +19,8 @@ from app.config.settings import ImageMode, APP_ENV, AppEnv
 load_dotenv()
 
 # TODO: semaphoe 개수 설정
-DECODE_SEMAPHORE_SIZE = 10
-decode_semaphore = asyncio.Semaphore(DECODE_SEMAPHORE_SIZE)
+# DECODE_SEMAPHORE_SIZE = 10
+# decode_semaphore = asyncio.Semaphore(DECODE_SEMAPHORE_SIZE)
 
 # local
 LOCAL_IMG_PATH_raw = os.getenv("LOCAL_IMG_PATH")
@@ -120,8 +120,9 @@ class LocalImageLoader(BaseImageLoader):
 
         # 2. 디코딩은 스레드에서 실행
         loop = asyncio.get_running_loop()
-        async with decode_semaphore:
-            decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local")
+        # async with decode_semaphore:
+        #     decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local")
+        decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local")
         return decoded_img
 
     async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
