@@ -26,7 +26,7 @@ from app.utils.image_loader import (
     S3ImageLoader,
 )
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
