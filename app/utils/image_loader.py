@@ -180,10 +180,10 @@ class GCSImageLoader(BaseImageLoader):
     ) -> np.ndarray:
         loop = asyncio.get_running_loop()
         image_bytes = await self._download(filename)
-        async with decode_semaphore:
-            decoded_img = await loop.run_in_executor(
-                executor, decode_image_cv2, image_bytes, "gcs"
-            )
+        # async with decode_semaphore:
+        decoded_img = await loop.run_in_executor(
+            executor, decode_image_cv2, image_bytes, "gcs"
+        )
         return decoded_img
 
     async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
@@ -282,10 +282,10 @@ class S3ImageLoader(BaseImageLoader):
     async def _process_single_file(self, filename: str) -> np.ndarray:
         loop = asyncio.get_running_loop()
         image_bytes = await self._download(filename)
-        async with decode_semaphore:
-            decoded = await loop.run_in_executor(
-                None, decode_image_cv2, image_bytes, "s3"
-            )
+        # async with decode_semaphore:
+        decoded = await loop.run_in_executor(
+            None, decode_image_cv2, image_bytes, "s3"
+        )
         return decoded
 
     async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
