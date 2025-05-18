@@ -8,7 +8,6 @@ from app.utils.logging_decorator import log_flow
 
 router = APIRouter(tags=["embedding"])
 
-# TODO: semaphoe 개수 설정
 EMBEDDING_SEMAPHORE_SIZE = 4
 embedding_semaphore = asyncio.Semaphore(EMBEDDING_SEMAPHORE_SIZE)
 
