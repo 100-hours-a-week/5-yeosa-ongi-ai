@@ -17,9 +17,9 @@ from app.api import api_router
 from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
 from app.middleware.error_handler import setup_exception_handler
 from app.model.aesthetic_regressor import load_aesthetic_regressor
-from app.model.arcface_loader import load_arcface_model
+# from app.model.arcface_loader import load_arcface_model
 from app.model.clip_loader import load_clip_model
-from app.model.yolo_detector_loader import load_yolo_detector
+# from app.model.yolo_detector_loader import load_yolo_detector
 from app.utils.image_loader import (
     get_image_loader,
     GCSImageLoader,
@@ -33,8 +33,8 @@ async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
     clip_model, clip_preprocess = load_clip_model(MODEL_NAME)
     aesthetic_regressor = load_aesthetic_regressor(MODEL_NAME)
-    arcface_model = load_arcface_model()
-    yolo_detector = load_yolo_detector()
+    # arcface_model = load_arcface_model()
+    # yolo_detector = load_yolo_detector()
     loop = asyncio.get_running_loop()
     executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
     loop.set_default_executor(executor)
@@ -48,8 +48,8 @@ async def lifespan(app: FastAPI):
     app.state.clip_model = clip_model
     app.state.clip_preprocess = clip_preprocess
     app.state.aesthetic_regressor = aesthetic_regressor
-    app.state.arcface_model = arcface_model
-    app.state.yolo_detector = yolo_detector
+    # app.state.arcface_model = arcface_model
+    # app.state.yolo_detector = yolo_detector
     app.state.image_loader = get_image_loader(IMAGE_MODE)
     app.state.loop = loop
     app.state.translated_categories = translated_categories
