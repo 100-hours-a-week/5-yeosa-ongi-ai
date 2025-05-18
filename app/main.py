@@ -1,6 +1,7 @@
 import os
 import asyncio
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -19,13 +20,13 @@ from app.model.aesthetic_regressor import load_aesthetic_regressor
 from app.model.arcface_loader import load_arcface_model
 from app.model.clip_loader import load_clip_model
 from app.model.yolo_detector_loader import load_yolo_detector
-from app.core.task_queue import SerialTaskQueue
 from app.utils.image_loader import (
     get_image_loader,
     GCSImageLoader,
     S3ImageLoader,
 )
 
+MAX_WORKERS = 8
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,6 +36,8 @@ async def lifespan(app: FastAPI):
     arcface_model = load_arcface_model()
     yolo_detector = load_yolo_detector()
     loop = asyncio.get_running_loop()
+    executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+    loop.set_default_executor(executor)
     category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=True)
     translated_categories = category_data["translated_categories"]
     category_text_features = category_data["text_features"]
