@@ -84,12 +84,13 @@ class BaseImageLoader(ABC):
     """
 
     @abstractmethod
-    async def load_images(self, filenames: list[str]) -> list[bytes]:
+    async def load_images(self, filenames: list[str], scale: list[str]) -> list[bytes]:
         """
         주어진 이미지 파일 이름 리스트에 대해 이미지를 로드합니다.
 
         Args:
             filenames (list[str]): 로드할 이미지 파일 이름 목록
+            scale: RGB / GRAY
 
         Returns:
             list[bytes]: 로드된 이미지 바이트 리스트
@@ -121,7 +122,7 @@ class LocalImageLoader(BaseImageLoader):
         decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local")
         return decoded_img
 
-    async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
+    async def load_images(self, filenames: list[str], scale: list[str] = 'RGB') -> list[np.ndarray]:
         """
         비동기적으로 로컬 이미지들을 로드합니다.
 
@@ -132,7 +133,7 @@ class LocalImageLoader(BaseImageLoader):
             list[np.ndarray]: 로드된 이미지 리스트
 
         """
-        tasks = [self._load_single_image(name) for name in filenames]
+        tasks = [self._load_single_image(name, scale) for name in filenames]
         return await asyncio.gather(*tasks)
 
 
@@ -181,7 +182,7 @@ class GCSImageLoader(BaseImageLoader):
         )
         return decoded_img
 
-    async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
+    async def load_images(self, filenames: list[str], scale: list[str] = 'RGB') -> list[np.ndarray]:
         """
         비동기적으로 GCS에서 이미지를 병렬로 다운로드합니다.
 
@@ -193,7 +194,7 @@ class GCSImageLoader(BaseImageLoader):
 
         """
         #start = time.time()
-        tasks = [self._process_single_file(f, None) for f in filenames]
+        tasks = [self._process_single_file(f, None, scale) for f in filenames]
 
         result = await asyncio.gather(*tasks)
         #end = time.time()
@@ -282,7 +283,7 @@ class S3ImageLoader(BaseImageLoader):
         )
         return decoded
 
-    async def load_images(self, filenames: list[str]) -> list[np.ndarray]:
+    async def load_images(self, filenames: list[str], scale: list[str] = 'RGB') -> list[np.ndarray]:
         """
         비동기적으로 S3에서 이미지를 병렬로 다운로드합니다.
 
@@ -294,7 +295,7 @@ class S3ImageLoader(BaseImageLoader):
 
         """
         #start = time.time()
-        tasks = [self._process_single_file(f) for f in filenames]
+        tasks = [self._process_single_file(f, scale) for f in filenames]
         result = await asyncio.gather(*tasks)
         #end = time.time()
         #print(f"전체 시간(s3): {end - start:.6f}초")
