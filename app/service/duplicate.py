@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List, Tuple, Any
 
 import torch
-import nympy as np
+import numpy as np
 import cv2
 from sklearn.cluster import DBSCAN
 
@@ -82,7 +82,7 @@ def group_by_labels(labels: np.ndarray, file_names: List[str]) -> List[List[str]
 def find_duplicate_groups(
     images: List[np.ndarray],
     image_refs: list[str],
-    eps: float = 0.1,
+    eps: int = 10,
     min_samples: int = 2,
 ) -> list[list[str]]:
     """
@@ -122,7 +122,7 @@ def find_duplicate_groups(
     hamming_matrix = compute_hamming_matrix(hashes)
     
     # 3. hamming distance matrix를 기반으로 DBSCAN 클러스터링
-    labels = cluster_with_dbscan(hamming_matrix, eps=10, min_samples=2)
+    labels = cluster_with_dbscan(hamming_matrix, eps=eps, min_samples=min_samples)
     
     # 4. 그룹핑
     groups = group_by_labels(labels, image_refs)
