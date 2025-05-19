@@ -62,13 +62,15 @@ AWS_SECRET_ACCESS_KEY: str = AWS_SECRET_ACCESS_KEY_raw
 AWS_REGION: str = AWS_REGION_raw
 
 # 공통 디코더
-def decode_image_cv2(image_bytes: bytes, label: str) -> np.ndarray:
+def decode_image_cv2(image_bytes: bytes, label: str, scale: str = 'RGB') -> np.ndarray:
     #start = time.time()
     nparr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    flags = cv2.IMREAD_GRAYSCALE if scale == 'GRAY' else cv2.IMREAD_COLOR
+    img = cv2.imdecode(nparr, flags)
     #end = time.time()
     #start2 = time.time()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if scale == 'RGB':
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     #end2 = time.time()
     #print(f"디코딩 시간({label}): {end - start:.6f}초")
     #print(f"색상공간 변환 시간({label}): {end2 - start2:.6f}초")
