@@ -1,6 +1,9 @@
 from collections import defaultdict
+from typing import List, Tuple, Any
 
 import torch
+import nympy as np
+import cv2
 from sklearn.cluster import DBSCAN
 
 from app.utils.logging_decorator import log_exception, log_flow
@@ -77,8 +80,8 @@ def group_by_labels(labels: np.ndarray, file_names: List[str]) -> List[List[str]
 
 @log_flow
 def find_duplicate_groups(
-    image_features: torch.Tensor,
-    image_names: list[str],
+    images: List[np.ndarray],
+    image_refs: list[str],
     eps: float = 0.1,
     min_samples: int = 2,
 ) -> list[list[str]]:
@@ -86,8 +89,8 @@ def find_duplicate_groups(
     중복 이미지를 클러스터링합니다.
 
     Args:
-        image_features: [N, D] torch.Tensor - 이미지 임베딩 (CPU)
-        image_names: list of N strings
+        images: List[np.ndarray] - OpenCV 이미지 배열 리스트
+        image_refs: list of N strings
         eps: cosine distance threshold
         min_samples: minimum samples to form a cluster
 
@@ -95,21 +98,33 @@ def find_duplicate_groups(
         List of lists of image names that are similar
 
     """
-    # 1. Normalize → Cosine similarity → Cosine distance
-    normed = image_features / image_features.norm(dim=1, keepdim=True)
-    similarity_matrix = normed @ normed.T
-    distance_matrix = 1 - similarity_matrix  # cosine distance
-    distance_matrix = distance_matrix.clamp(min=0)
+    # # 1. Normalize → Cosine similarity → Cosine distance
+    # normed = image_features / image_features.norm(dim=1, keepdim=True)
+    # similarity_matrix = normed @ normed.T
+    # distance_matrix = 1 - similarity_matrix  # cosine distance
+    # distance_matrix = distance_matrix.clamp(min=0)
 
-    # 2. DBSCAN clustering (precomputed distance)
-    labels = DBSCAN(
-        eps=eps, min_samples=min_samples, metric="precomputed"
-    ).fit_predict(distance_matrix.numpy())
+    # # 2. DBSCAN clustering (precomputed distance)
+    # labels = DBSCAN(
+    #     eps=eps, min_samples=min_samples, metric="precomputed"
+    # ).fit_predict(distance_matrix.numpy())
 
-    # 3. Group by cluster label (exclude noise = -1)
-    groups = defaultdict(list)
-    for idx, label in enumerate(labels):
-        if label != -1:
-            groups[label].append(image_names[idx])
+    # # 3. Group by cluster label (exclude noise = -1)
+    # groups = defaultdict(list)
+    # for idx, label in enumerate(labels):
+    #     if label != -1:
+    #         groups[label].append(image_names[idx])
+    
+    # 1. pHash 계산
+    hashes = compute_hashes(images)
+    
+    # 2. hamming distance matrix 생성
+    hamming_matrix = compute_hamming_matrix(hashes)
+    
+    # 3. hamming distance matrix를 기반으로 DBSCAN 클러스터링
+    labels = cluster_with_dbscan(hamming_matrix, eps=10, min_samples=2)
+    
+    # 4. 그룹핑
+    groups = group_by_labels(labels, image_refs)
 
-    return list(groups.values())
+    return groups

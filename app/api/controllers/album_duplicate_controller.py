@@ -3,9 +3,6 @@ from functools import partial
 from typing import List, Tuple, Any
 
 import torch
-import nympy as np
-import cv2
-from sklearn.cluster import DBSCAN
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -72,37 +69,37 @@ async def duplicate_controller(req: ImageRequest, request: Request) -> JSONRespo
         extra={"loaded_images": len(images)},
     )
     
-    # 2. pHash 계산
-    hashes = compute_hashes(images)
+    # # 2. pHash 계산
+    # hashes = compute_hashes(images)
     
-    # 3. hamming distance matrix 생성
-    hamming_matrix = compute_hamming_matrix(hashes)
+    # # 3. hamming distance matrix 생성
+    # hamming_matrix = compute_hamming_matrix(hashes)
     
-    # 4. hamming distance matrix를 기반으로 DBSCAN 클러스터링
-    labels = cluster_with_dbscan(hamming_matrix, eps=10, min_samples=2)
+    # # 4. hamming distance matrix를 기반으로 DBSCAN 클러스터링
+    # labels = cluster_with_dbscan(hamming_matrix, eps=10, min_samples=2)
     
-    # 5. 그룹핑
-    data = group_by_labels(labels, image_refs)
+    # # 5. 그룹핑
+    # data = group_by_labels(labels, image_refs)
 
     # # 3. 중복 이미지 검색
     # logger.debug("중복 이미지 검색 시작")
     # image_features = torch.stack(image_features)
     
-    # task_func = partial(find_duplicate_groups, image_features, image_refs)
+    task_func = partial(find_duplicate_groups, images, image_refs)
 
-    # data = await loop.run_in_executor(None, task_func)
+    data = await loop.run_in_executor(None, task_func)
 
-    # # 4. 결과 로깅 및 응답
-    # total_duplicates = sum(len(group) for group in data)
-    # logger.info(
-    #     "중복 이미지 검색 완료",
-    #     extra={
-    #         "total_images": len(image_refs),
-    #         "duplicate_groups": len(data),
-    #         "total_duplicates": total_duplicates,
-    #         "duplicate_ratio": f"{(total_duplicates / len(image_refs)) * 100:.1f}%",
-    #     },
-    # )
+    # 4. 결과 로깅 및 응답
+    total_duplicates = sum(len(group) for group in data)
+    logger.info(
+        "중복 이미지 검색 완료",
+        extra={
+            "total_images": len(image_refs),
+            "duplicate_groups": len(data),
+            "total_duplicates": total_duplicates,
+            "duplicate_ratio": f"{(total_duplicates / len(image_refs)) * 100:.1f}%",
+        },
+    )
 
     return JSONResponse(
         status_code=201,
