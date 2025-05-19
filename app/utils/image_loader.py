@@ -110,7 +110,7 @@ class LocalImageLoader(BaseImageLoader):
         """
         self.image_dir = image_dir
 
-    async def _load_single_image(self, filename: str) -> np.ndarray:
+    async def _load_single_image(self, filename: str, scale: list[str] = 'RGB') -> np.ndarray:
         file_path = os.path.join(self.image_dir, filename)
 
         # 1. 파일 비동기 I/O로 읽기
@@ -119,7 +119,7 @@ class LocalImageLoader(BaseImageLoader):
 
         # 2. 디코딩은 스레드에서 실행
         loop = asyncio.get_running_loop()
-        decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local")
+        decoded_img = await loop.run_in_executor(None, decode_image_cv2, image_bytes, "local", scale)
         return decoded_img
 
     async def load_images(self, filenames: list[str], scale: list[str] = 'RGB') -> list[np.ndarray]:
@@ -173,12 +173,12 @@ class GCSImageLoader(BaseImageLoader):
         return image_bytes
 
     async def _process_single_file(
-        self, filename: str, executor=None
+        self, filename: str, executor=None, scale: list[str]='RGB'
     ) -> np.ndarray:
         loop = asyncio.get_running_loop()
         image_bytes = await self._download(filename)
         decoded_img = await loop.run_in_executor(
-            executor, decode_image_cv2, image_bytes, "gcs"
+            executor, decode_image_cv2, image_bytes, "gcs", scale
         )
         return decoded_img
 
@@ -275,11 +275,11 @@ class S3ImageLoader(BaseImageLoader):
             #print(f" S3 다운로드 시간 : {end - start}")
             return image_bytes
     
-    async def _process_single_file(self, filename: str) -> np.ndarray:
+    async def _process_single_file(self, filename: str, scale: list[str] = 'RGB') -> np.ndarray:
         loop = asyncio.get_running_loop()
         image_bytes = await self._download(filename)
         decoded = await loop.run_in_executor(
-            None, decode_image_cv2, image_bytes, "s3"
+            None, decode_image_cv2, image_bytes, "s3", scale
         )
         return decoded
 
