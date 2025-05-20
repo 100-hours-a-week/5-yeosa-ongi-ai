@@ -4,8 +4,10 @@ numpy==2.2.5
 aioboto3==14.3.0
 Pillow==11.2.1
 pydantic==2.11.3
+httpx==0.28.1
 scikit_learn==1.6.1
 uvicorn==0.34.0
+aiofiles==24.1.0
 python-dotenv==1.1.0
 gcloud-aio-storage==9.4.0
 loguru==0.7.3
