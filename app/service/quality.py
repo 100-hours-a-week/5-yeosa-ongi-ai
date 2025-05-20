@@ -5,13 +5,14 @@ import torch
 import torch.nn.functional as F
 
 from app.utils.logging_decorator import log_exception, log_flow
+from app.config.settings import MODEL_NAME
 
 logger = logging.getLogger(__name__)
 
 # 상수 정의
 DEFAULT_WEIGHT_B = 0.25
-DEFAULT_THRESHOLD_COMBINED = 0.490
-DEFAULT_THRESHOLD_A = 0.488
+DEFAULT_THRESHOLD_COMBINED = 0.486 if MODEL_NAME.value == 'ViT-L/14' else 0.490
+DEFAULT_THRESHOLD_A = 0.483 if MODEL_NAME.value == 'ViT-L/14' else 0.488
 
 ResultType = Literal["both", "field_a_only", "combined_only", "neither"]
 
