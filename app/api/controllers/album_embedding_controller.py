@@ -1,81 +1,64 @@
-import logging, time
-from functools import partial
-from typing import Dict, Any
+import logging
+import time
+import pickle
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from app.schemas.album_schema import ImageRequest
-from app.service.embedding import embed_images
-from app.utils.logging_decorator import log_exception, log_flow
+from app.utils.logging_decorator import log_flow
+from app.core.cache import set_cached_embedding
 
 logger = logging.getLogger(__name__)
 
-# 상수 정의
 DEFAULT_BATCH_SIZE = 16
-DEFAULT_DEVICE = "cpu"
-
 
 @log_flow
 async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
     """
-    이미지 임베딩을 수행하는 컨트롤러입니다.
-
-    Args:
-        req: 이미지 파일명 목록을 포함한 요청 객체
-        request: FastAPI 요청 객체
-
-    Returns:
-        JSONResponse: 성공 메시지와 데이터를 포함한 응답
+    클라이언트로부터 이미지 파일명을 받아 GPU 서버에 전달하고,
+    임베딩 결과를 받아 캐싱하는 컨트롤러입니다.
     """
-    logger.info(
-        "이미지 임베딩 요청 처리 시작",
-        extra={"total_images": len(req.images)},
-    )
+    logger.info("이미지 임베딩 요청 처리 시작", extra={"total_images": len(req.images)})
 
-    image_refs = req.images
+    try:
+        gpu_client = request.app.state.gpu_client
 
-    # 1. 이미지 로드
-    image_loader = request.app.state.image_loader
+        # ✅ GPU 서버에 JSON 요청 (파일명 목록만)
+        response = await gpu_client.post(
+            "/clip/embedding",
+            json=req.dict(),  # {"images": [...]}
+            headers={"Content-Type": "application/json"},
+        )
 
-    start = time.time()
-    print(f"캐싱 시작: {start}")
-    images = await image_loader.load_images(image_refs)
-    end = time.time()
-    print(f"캐싱 끝: {end}")
+        if response.status_code != 200:
+            logger.error("GPU 서버 응답 실패", extra={"status": response.status_code})
+            return JSONResponse(
+                status_code=500,
+                content={"message": "embedding failed (gpu error)", "data": None}
+            )
 
-    logger.debug(
-        "이미지 로드 완료",
-        extra={"loaded_images": len(images)},
-    )
+        # ✅ Pickle 응답 처리
+        response_obj = pickle.loads(await response.aread())  # await response.body() 도 가능
+        if response_obj.get("message") != "success":
+            logger.error("GPU 서버 응답 비정상", extra={"message": response_obj.get("message")})
+            return JSONResponse(
+                status_code=500,
+                content={"message": "embedding failed (gpu processing error)", "data": None}
+            )
 
-    # 2. 임베딩 수행
-    clip_model = request.app.state.clip_model
-    clip_preprocess = request.app.state.clip_preprocess
-    loop = request.app.state.loop
+        result = response_obj["data"]  # Dict[str, List[float]]
 
-    task_func = partial(
-        embed_images,
-        clip_model,
-        clip_preprocess,
-        images,
-        image_refs,
-        batch_size=DEFAULT_BATCH_SIZE,
-        device=DEFAULT_DEVICE,
-    )
+        logger.info("임베딩 완료", extra={"processed_images": len(result)})
 
-    start = time.time()
-    print(f"임베딩 시작: {start}")
-    await loop.run_in_executor(None, task_func)
-    end = time.time()
-    print(f"임베딩 끝: {end}")
+        for filename, feature in result.items():
+            set_cached_embedding(filename, feature)
 
-    logger.info(
-        "이미지 임베딩 완료",
-        extra={"processed_images": len(image_refs)},
-    )
+        return JSONResponse(status_code=201, content={"message": "success", "data": None})
 
-    return JSONResponse(
-        status_code=201,
-        content={"message": "success", "data": None},
-    )
+    except Exception as e:
+        logger.error("GPU 서버 호출 예외", exc_info=True, extra={"error": str(e)})
+        return JSONResponse(
+            status_code=500,
+            content={"message": "embedding failed (exception)", "data": None}
+        )
