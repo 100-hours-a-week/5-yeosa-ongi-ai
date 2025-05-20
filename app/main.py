@@ -1,7 +1,11 @@
 import os
 import asyncio
+import httpx
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
+
+load_dotenv()
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -27,6 +31,10 @@ from app.utils.image_loader import (
 )
 
 MAX_WORKERS = 8
+
+GPU_SERVER_BASE_URL = os.getenv("GPU_SERVER_BASE_URL")
+if not GPU_SERVER_BASE_URL:
+    raise EnvironmentError("GPU_SERVER_BASE_URL이 .env 파일에 없습니다.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,6 +64,11 @@ async def lifespan(app: FastAPI):
     app.state.category_text_features = category_text_features
     app.state.quality_text_features = quality_text_features
     app.state.quality_fields = quality_fields
+    app.state.gpu_client = httpx.AsyncClient(
+        base_url=GPU_SERVER_BASE_URL, 
+        timeout=10.0,
+        headers={"Content-Type": "application/octet-stream"},  # JSON이면 application/json
+    )
 
     if IMAGE_MODE == IMAGE_MODE.S3:
         if isinstance(app.state.image_loader, S3ImageLoader):
