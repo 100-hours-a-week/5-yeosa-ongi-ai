@@ -3,7 +3,6 @@ from functools import partial
 from typing import List, Tuple, Any
 
 import torch
-import cv2
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -36,7 +35,7 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
 
     loop = request.app.state.loop
     image_refs = req.images
-
+    # TODO: 라플라시안 필터와 CLIP 필터를 병렬로 실행할 수 있도록 개선
     # 1. 이미지 로드
     image_loader = request.app.state.image_loader
     images = await image_loader.load_images(image_refs, 'GRAY')
