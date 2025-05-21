@@ -258,3 +258,21 @@ def laplacian_filter(
     resized_image = resize_for_laplacian(image, target_long_side)
     laplacian_var = cv2.Laplacian(resized_image, cv2.CV_64F).var()
     return laplacian_var < threshold
+
+@log_exception
+async def get_laplacian_low_quality_images(image_refs: List[str], image_loader, threshold: float = 80.0) -> List[str]:
+    """
+    이미지 목록에서 Laplacian 필터를 사용하여 저품질 이미지를 검색합니다.
+
+    Args:
+        image_refs (List[str]): 이미지 파일명 목록
+        image_loader: 이미지 로더 객체
+        threshold (float): Laplacian 임계값 (default: 80.0)
+
+    Returns:
+        List[str]: 저품질 이미지 파일명 목록
+    """
+    images = await image_loader.load_images(image_refs, 'GRAY')
+    laplacian_low_quality_images = [image_ref for image_ref, image in zip(image_refs, images) if laplacian_filter(image, threshold)]
+
+    return laplacian_low_quality_images
