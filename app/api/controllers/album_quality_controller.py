@@ -8,10 +8,11 @@ from fastapi.responses import JSONResponse
 
 from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageRequest
-from app.service.quality import get_low_quality_images
+from app.service.quality import get_low_quality_images, laplacian_filter
 from app.utils.logging_decorator import log_exception, log_flow
 
 logger = logging.getLogger(__name__)
+THRESHOLD = 80  # 저품질 이미지 판별을 위한 임계값
 
 
 @log_flow
@@ -33,12 +34,24 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
     )
 
     loop = request.app.state.loop
-    image_names = req.images
+    image_refs = req.images
+    # TODO: 라플라시안 필터와 CLIP 필터를 병렬로 실행할 수 있도록 개선
+    # 1. 이미지 로드
+    image_loader = request.app.state.image_loader
+    images = await image_loader.load_images(image_refs, 'GRAY')
+    
+    logger.debug(
+        "이미지 로드 완료",
+        extra={"loaded_images": len(images)},
+    )
+    
+    # 2. 라플라시안 기반, 저품질 이미지 필터링
+    laplacian_filtered = [image_ref for image_ref, image in zip(image_refs, images) if laplacian_filter(image, THRESHOLD)]
 
     # 1. 이미지 임베딩 로드
     embed_load_func = partial(
         get_cached_embeddings_parallel,
-        image_names,
+        image_refs,
     )
     image_features, missing_keys = await loop.run_in_executor(
         None,
@@ -66,18 +79,19 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
 
     task_func = partial(
         get_low_quality_images,
-        image_names,
+        image_refs,
         image_features,
         text_features,
         fields,
     )
     
-    result = await loop.run_in_executor(None, task_func)
+    clip_filtered = await loop.run_in_executor(None, task_func)
+    result = list(set(laplacian_filtered) | set(clip_filtered))
 
     logger.info(
         "저품질 이미지 검색 완료",
         extra={
-            "total_images": len(image_names),
+            "total_images": len(image_refs),
             "low_quality_count": len(result),
         },
     )
@@ -86,3 +100,5 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
         status_code=201,
         content={"message": "success", "data": result},
     )
+
+
