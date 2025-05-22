@@ -1,17 +1,15 @@
-import logging
-from functools import partial
-from typing import List, Tuple, Any
+import logging, asyncio
+import asyncio
 
-import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageRequest
-from app.service.quality import get_low_quality_images
+from app.service.quality import get_clip_low_quality_images, get_laplacian_low_quality_images
 from app.utils.logging_decorator import log_exception, log_flow
 
 logger = logging.getLogger(__name__)
+THRESHOLD = 80  # 저품질 이미지 판별을 위한 임계값
 
 
 @log_flow
@@ -32,51 +30,37 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
         extra={"total_images": len(req.images)},
     )
 
-    loop = request.app.state.loop
-    image_names = req.images
+    image_refs = req.images
+    image_loader = request.app.state.image_loader
+    text_features = request.app.state.quality_text_features
+    fields = request.app.state.quality_fields
+    
+    laplacian_task = asyncio.create_task(get_laplacian_low_quality_images(image_refs, image_loader, THRESHOLD))
+    clip_task = asyncio.create_task(get_clip_low_quality_images(image_refs, text_features, fields))
+    
+    await asyncio.wait([clip_task, laplacian_task], return_when=asyncio.FIRST_COMPLETED)
+    
+    clip_low_images, missing_keys = await clip_task
 
-    # 1. 이미지 임베딩 로드
-    embed_load_func = partial(
-        get_cached_embeddings_parallel,
-        image_names,
-    )
-    image_features, missing_keys = await loop.run_in_executor(
-        None,
-        embed_load_func,
-    )
-
-    # 2. 임베딩이 없는 이미지 처리
     if missing_keys:
-        logger.warning(
-            "일부 이미지의 임베딩이 없음",
-            extra={"missing_count": len(missing_keys)},
-        )
+        laplacian_task.cancel()
+        try:
+            await laplacian_task
+        except asyncio.CancelledError:
+            logger.debug("laplacian_task cancelled")
         return JSONResponse(
             status_code=428,
             content={"message": "embedding_required", "data": missing_keys},
         )
-
-    # 3. 이미지 임베딩 정규화
-    image_features = torch.stack(image_features)
-    image_features /= image_features.norm(dim=-1, keepdim=True)
-    
-    # 4. 저품질 이미지 검색
-    text_features = request.app.state.quality_text_features
-    fields = request.app.state.quality_fields
-
-    task_func = partial(
-        get_low_quality_images,
-        image_names,
-        image_features,
-        text_features,
-        fields,
-    )
-    result = await loop.run_in_executor(None, task_func)
+            
+    laplacian_low_images = await laplacian_task
+        
+    result = list(set(laplacian_low_images) | set(clip_low_images))
 
     logger.info(
         "저품질 이미지 검색 완료",
         extra={
-            "total_images": len(image_names),
+            "total_images": len(image_refs),
             "low_quality_count": len(result),
         },
     )
@@ -85,3 +69,5 @@ async def quality_controller(req: ImageRequest, request: Request) -> JSONRespons
         status_code=201,
         content={"message": "success", "data": result},
     )
+
+

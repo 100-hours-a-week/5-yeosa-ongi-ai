@@ -1,17 +1,23 @@
 import logging
+from functools import partial
 from typing import Dict, List, Literal, Tuple
 
 import torch
 import torch.nn.functional as F
+import cv2
+import numpy as np
+from fastapi.responses import JSONResponse
 
+from app.core.cache import get_cached_embeddings_parallel
 from app.utils.logging_decorator import log_exception, log_flow
+from app.config.settings import MODEL_NAME
 
 logger = logging.getLogger(__name__)
 
 # 상수 정의
 DEFAULT_WEIGHT_B = 0.25
-DEFAULT_THRESHOLD_COMBINED = 0.490
-DEFAULT_THRESHOLD_A = 0.488
+DEFAULT_THRESHOLD_COMBINED = 0.486 if MODEL_NAME.value == 'ViT-L/14' else 0.490
+DEFAULT_THRESHOLD_A = 0.483 if MODEL_NAME.value == 'ViT-L/14' else 0.488
 
 ResultType = Literal["both", "field_a_only", "combined_only", "neither"]
 
@@ -167,9 +173,8 @@ def evaluate_dual_threshold(
 
 
 @log_exception
-def get_low_quality_images(
-    image_names: List[str],
-    image_features: torch.Tensor,
+async def get_clip_low_quality_images(
+    image_refs: List[str],
     text_features: torch.Tensor,
     fields: List[str],
 ) -> List[str]:
@@ -177,8 +182,7 @@ def get_low_quality_images(
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
 
     Args:
-        image_names: 이미지 이름 리스트
-        image_features: 이미지 임베딩 텐서
+        image_refs: 이미지 이름 리스트
         text_features: 텍스트 임베딩 텐서
         fields: 필드 이름 리스트
 
@@ -188,8 +192,22 @@ def get_low_quality_images(
     """
     logger.info(
         "저품질 이미지 검색 시작",
-        extra={"total_images": len(image_names)},
+        extra={"total_images": len(image_refs)},
     )
+    # 1. 이미지 임베딩 로드
+    image_features, missing_keys = get_cached_embeddings_parallel(image_refs)
+
+    # 2. 임베딩이 없는 이미지 처리
+    if missing_keys:
+        logger.warning(
+            "일부 이미지의 임베딩이 없음",
+            extra={"missing_count": len(missing_keys)},
+        )
+        return image_features, missing_keys
+
+    # 3. 이미지 임베딩 정규화
+    image_features = torch.stack(image_features)
+    image_features /= image_features.norm(dim=-1, keepdim=True)
 
     scores = get_field_scores(image_features, text_features, fields)
     results = evaluate_dual_threshold(
@@ -202,15 +220,74 @@ def get_low_quality_images(
     )
 
     low_quality_images = [
-        name for name, result in zip(image_names, results) if result != "both"
+        name for name, result in zip(image_refs, results) if result != "both"
     ]
 
     logger.info(
         "저품질 이미지 검색 완료",
         extra={
-            "total_images": len(image_names),
+            "total_images": len(image_refs),
             "low_quality_count": len(low_quality_images),
         },
     )
 
-    return low_quality_images
+    return low_quality_images, missing_keys
+
+
+@log_exception
+def resize_for_laplacian(image: np.ndarray, target_long_side: int = 300):
+    """
+    긴 변을 기준으로 이미지 크기를 축소하여 Laplacian 분석용으로 리사이즈합니다.
+
+    Args:
+        image (np.ndarray): Grayscale 이미지
+        target_long_side (int): 기준 긴 변 픽셀 수 (default: 300)
+
+    Returns:
+        np.ndarray: 리사이즈된 Grayscale 이미지
+    """
+    h, w = image.shape
+    scale = target_long_side / max(h, w)
+    new_size = (int(w * scale), int(h * scale))
+    resized = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
+    return resized
+
+
+@log_exception
+def laplacian_filter(
+    image: np.ndarray,
+    threshold: float = 80.0,
+    target_long_side: int = 300,
+) -> bool:
+    """
+    Laplacian을 사용하여 이미지의 품질을 평가합니다.
+
+    Args:
+        image (np.ndarray): Grayscale 이미지
+        threshold (float): Laplacian 임계값 (default: 80.0)
+        target_long_side (int): 기준 긴 변 픽셀 수 (default: 300)
+
+    Returns:
+        bool: 품질이 낮으면 True, 그렇지 않으면 False
+    """
+    resized_image = resize_for_laplacian(image, target_long_side)
+    laplacian_var = cv2.Laplacian(resized_image, cv2.CV_64F).var()
+    return laplacian_var < threshold
+
+@log_exception
+async def get_laplacian_low_quality_images(image_refs: List[str], image_loader, threshold: float = 80.0) -> List[str]:
+    """
+    이미지 목록에서 Laplacian 필터를 사용하여 저품질 이미지를 검색합니다.
+
+    Args:
+        image_refs (List[str]): 이미지 파일명 목록
+        image_loader: 이미지 로더 객체
+        threshold (float): Laplacian 임계값 (default: 80.0)
+
+    Returns:
+        List[str]: 저품질 이미지 파일명 목록
+    """
+    images = await image_loader.load_images(image_refs, 'GRAY')
+    laplacian_low_quality_images = [image_ref for image_ref, image in zip(image_refs, images) if laplacian_filter(image, threshold)]
+
+    return laplacian_low_quality_images

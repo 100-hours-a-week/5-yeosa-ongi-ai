@@ -1,4 +1,4 @@
-import logging
+import logging, time
 from functools import partial
 from typing import Dict, Any
 
@@ -38,7 +38,11 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
     # 1. 이미지 로드
     image_loader = request.app.state.image_loader
 
+    start = time.time()
+    print(f"캐싱 시작: {start}")
     images = await image_loader.load_images(image_refs)
+    end = time.time()
+    print(f"캐싱 끝: {end}")
 
     logger.debug(
         "이미지 로드 완료",
@@ -60,7 +64,11 @@ async def embed_controller(req: ImageRequest, request: Request) -> JSONResponse:
         device=DEFAULT_DEVICE,
     )
 
+    start = time.time()
+    print(f"임베딩 시작: {start}")
     await loop.run_in_executor(None, task_func)
+    end = time.time()
+    print(f"임베딩 끝: {end}")
 
     logger.info(
         "이미지 임베딩 완료",
