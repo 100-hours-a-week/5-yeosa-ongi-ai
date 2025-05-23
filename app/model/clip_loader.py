@@ -5,7 +5,7 @@ import clip
 import torch
 import torch.nn as nn
 
-from app.model.clip_preprocess import clip_preprocess_np
+from app.model.clip_preprocess import get_clip_preprocess_fn
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def load_clip_model(
                 },
             )
             _model, _ = clip.load(model_name, device=device)
-            _preprocess = clip_preprocess_np
+            _preprocess = get_clip_preprocess_fn(device)
             _model.eval()
             logger.info("CLIP 모델 로드 완료")
         except Exception as e:
