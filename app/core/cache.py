@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+import torch
 from cachetools import TTLCache
 
 # 전역 TTL 캐시 인스턴스
@@ -13,7 +14,12 @@ def get_cached_embedding(key: str) -> Any | None:
 
 
 def set_cached_embedding(key: str, value: Any) -> None:
-    """캐시에 안전하게 값 저장"""
+    """
+    캐시에 안전하게 값 저장.
+    텐서일 경우 .cpu().float() 처리하여 CPU 연산 오류 방지.
+    """
+    if isinstance(value, torch.Tensor):
+        value = value.cpu().float()
     embedding_cache[key] = value
 
 
