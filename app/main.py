@@ -21,7 +21,6 @@ from app.api import api_router
 from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
 from app.middleware.error_handler import setup_exception_handler
 from app.model.aesthetic_regressor import load_aesthetic_regressor
-from app.model.clip_loader import load_clip_model
 from app.utils.image_loader import (
     get_image_loader,
     GCSImageLoader,
@@ -37,7 +36,6 @@ if not GPU_SERVER_BASE_URL:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
-    clip_model, clip_preprocess = load_clip_model(MODEL_NAME)
     aesthetic_regressor = load_aesthetic_regressor(MODEL_NAME)
     loop = asyncio.get_running_loop()
     executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
@@ -49,8 +47,6 @@ async def lifespan(app: FastAPI):
     quality_text_features = quality_data["text_features"]
     quality_fields = quality_data["fields"]
 
-    app.state.clip_model = clip_model
-    app.state.clip_preprocess = clip_preprocess
     app.state.aesthetic_regressor = aesthetic_regressor
     app.state.image_loader = get_image_loader(IMAGE_MODE)
     app.state.loop = loop
