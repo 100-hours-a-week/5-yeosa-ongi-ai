@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
     category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=True)
     translated_categories = category_data["translated_categories"]
     category_text_features = category_data["text_features"]
+    parent_categories_per_category = category_data["parent_categories"]
     quality_data = torch.load(os.path.join(MODEL_BASE_PATH, QUALITY_FEATURES_FILENAME), weights_only=True)
     quality_text_features = quality_data["text_features"]
     quality_fields = quality_data["fields"]
@@ -52,6 +53,7 @@ async def lifespan(app: FastAPI):
     app.state.loop = loop
     app.state.translated_categories = translated_categories
     app.state.category_text_features = category_text_features
+    app.state.parent_categories_per_category = parent_categories_per_category
     app.state.quality_text_features = quality_text_features
     app.state.quality_fields = quality_fields
     app.state.gpu_client = httpx.AsyncClient(
