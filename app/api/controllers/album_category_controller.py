@@ -7,7 +7,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from app.core.cache import get_cached_embeddings_parallel
-from app.schemas.album_schema import ImageCategoryGroup, ImageRequest
+from app.schemas.album_schema import ImageConceptRequest
 from app.service.category import categorize_images
 from app.utils.logging_decorator import log_exception, log_flow
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @log_flow
-async def categorize_controller(req: ImageRequest, request: Request) -> JSONResponse:
+async def categorize_controller(req: ImageConceptRequest, request: Request) -> JSONResponse:
     """
     이미지를 카테고리별로 분류하는 컨트롤러입니다.
 
