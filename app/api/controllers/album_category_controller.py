@@ -35,7 +35,9 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
     # 1. 상태 변수 로드
     translated_categories = request.app.state.translated_categories
     text_features = request.app.state.category_text_features
+    parent_categories = request.app.state.parent_categories
     loop = request.app.state.loop
+    concepts = req.concepts
     image_names = req.images
 
     # 2. 이미지 임베딩 로드
