@@ -41,10 +41,10 @@ async def lifespan(app: FastAPI):
     executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
     loop.set_default_executor(executor)
     category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=True)
-    translated_categories = category_data["translated_categories"]
-    category_text_features = category_data["text_features"]
-    parent_categories_per_category = category_data["parent_categories"]
-    parent_categories = dict(zip(translated_categories, parent_categories_per_category))
+    parent_categories = category_data["parent_categories"]
+    parent_embeds = category_data["parent_embeds"]
+    embed_dict = category_data["embed_dict"]
+    category_dict = category_data["category_dict"]
     quality_data = torch.load(os.path.join(MODEL_BASE_PATH, QUALITY_FEATURES_FILENAME), weights_only=True)
     quality_text_features = quality_data["text_features"]
     quality_fields = quality_data["fields"]
@@ -52,9 +52,10 @@ async def lifespan(app: FastAPI):
     app.state.aesthetic_regressor = aesthetic_regressor
     app.state.image_loader = get_image_loader(IMAGE_MODE)
     app.state.loop = loop
-    app.state.translated_categories = translated_categories
-    app.state.category_text_features = category_text_features
     app.state.parent_categories = parent_categories
+    app.state.parent_embeds = parent_embeds
+    app.state.embed_dict = embed_dict
+    app.state.category_dict = category_dict
     app.state.quality_text_features = quality_text_features
     app.state.quality_fields = quality_fields
     app.state.gpu_client = httpx.AsyncClient(
