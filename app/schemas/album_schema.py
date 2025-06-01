@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # /embedding, /duplicate, /quality, /people 등에서 공통 사용
@@ -24,7 +24,8 @@ class ImageConceptRequest(BaseModel):
         images (list[str]): 해당 카테고리에 속하는 이미지 파일명 목록입니다.
 
     """
-    concepts: list[str]
+    concepts: list[str] = Field(default_factory=list)
+
     images: list[str]
 
 
