@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 @log_flow
-async def categorize_controller(req: ImageConceptRequest, request: Request) -> JSONResponse:
+async def categorize_controller(
+    req: ImageConceptRequest, request: Request
+) -> JSONResponse:
     """
     이미지를 카테고리별로 분류하는 컨트롤러입니다.
 
@@ -33,9 +35,11 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
     )
 
     # 1. 상태 변수 로드
-    translated_categories = request.app.state.translated_categories
-    text_features = request.app.state.category_text_features
     parent_categories = request.app.state.parent_categories
+    parent_embeds = request.app.state.parent_embeds
+    embed_dict = request.app.state.embed_dict
+    category_dict = request.app.state.category_dict
+
     loop = request.app.state.loop
     concepts = req.concepts
     image_names = req.images
@@ -72,26 +76,35 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
         if isinstance(feature, list):
             feature = torch.tensor(feature, dtype=torch.float32)
         processed_features.append(feature)
-    
+
     image_features = torch.stack(processed_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
-    
+
     logger.info(
         "임베딩 로딩 완료",
         extra={"total_images": len(req.images)},
     )
-    
-    # 5. 카테고리 분류
+
+    # 5. Concept에 따른 카테고리 정제
+    refined_categories = list(parent_categories)
+    refined_embeds = list(parent_embeds)
+    for concept in concepts:
+        concept_category = category_dict.get(concept, [])
+        concept_embed = embed_dict.get(concept, [])
+        refined_categories.extend(concept_category)
+        refined_embeds.extend(concept_embed)
+
+    refined_embeds = torch.stack(refined_embeds, dim=0)
+
+    # 6. 카테고리 분류
     task_func = partial(
         categorize_images,
         image_features.cpu(),
         image_names,
-        text_features.cpu(),
-        translated_categories,
-        parent_categories,
-        concepts
+        refined_embeds.cpu(),
+        refined_categories,
     )
-    
+
     categorized = await loop.run_in_executor(None, task_func)
 
     # 6. 응답 형식 변환

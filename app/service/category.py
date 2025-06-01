@@ -318,12 +318,10 @@ def categorize_images(
     image_names: List[str],  # 이미지 이름 리스트 추가
     text_features: torch.Tensor,
     categories: List[str],
-    parent_categories: Dict[str, list[str]],
-    concepts: List[str],
     tag_boosts: Optional[Dict[str, float]] = None,
     tau: float = 0.28,
     lambda_boost: float = 0.5,
-    threshold: float = 0.21,
+    threshold: float = 0.23,
 ) -> Dict[str, List[str]]:  # 반환 타입을 Dict[str, List[str]]로 변경
     """
     이미지들을 카테고리별로 분류합니다.
@@ -363,30 +361,30 @@ def categorize_images(
         },
     )
 
-    # 3. 카테고리 정제 (부모 카테고리 포함)
-    refined_topk_info = refine_categories_by_parent(
-        topk_info, parent_categories, concepts
-    )
+    # # 3. 카테고리 정제 (부모 카테고리 포함)
+    # refined_topk_info = refine_categories_by_parent(
+    #     topk_info, parent_categories, concepts
+    # )
 
     # 4. 대표 태그 선정
     tag_scores = compute_tag_representative_scores(
-        refined_topk_info, categories, tau, lambda_boost
+        topk_info, categories, tau, lambda_boost
     )
     representative_tags = select_representative_categories(tag_scores)
 
     # 5. 1차 분류
     category_to_images = classify_images_by_representative_tags(
-        refined_topk_info, representative_tags, threshold
+        topk_info, representative_tags, threshold
     )
 
     # 6. 각 카테고리별 새로운 대표 태그 선정
     category_to_rep_tag = select_representative_tag_per_category(
-        category_to_images, refined_topk_info, categories, tau, lambda_boost
+        category_to_images, topk_info, categories, tau, lambda_boost
     )
 
     # 7. 새로운 대표 태그로 재분류
     final_category_to_indices = reclassify_images_by_new_rep_tags(
-        category_to_images, category_to_rep_tag, refined_topk_info, threshold
+        category_to_images, category_to_rep_tag, topk_info, threshold
     )
 
     # 인덱스를 이미지 이름으로 변환

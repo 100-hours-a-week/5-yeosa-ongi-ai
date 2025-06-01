@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
     loop.set_default_executor(executor)
-    category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=True)
+    category_data = torch.load(os.path.join(MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME), weights_only=False)
     parent_categories = category_data["parent_categories"]
     parent_embeds = category_data["parent_embeds"]
     embed_dict = category_data["embed_dict"]
