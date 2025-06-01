@@ -72,7 +72,8 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
         image_names,
         text_features.cpu(),
         translated_categories,
-        parent_categories
+        parent_categories,
+        concepts
     )
     
     categorized = await loop.run_in_executor(None, task_func)
