@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional
 
@@ -5,10 +6,13 @@ import torch
 
 from app.utils.logging_decorator import log_exception, log_flow
 
+logger = logging.getLogger(__name__)
 
+
+@log_flow
 def compute_similarity(
-    image_features: torch.Tensor, 
-    text_features: torch.Tensor, 
+    image_features: torch.Tensor,
+    text_features: torch.Tensor,
 ) -> torch.Tensor:
     """
     이미지와 텍스트 특징 간의 유사도를 계산합니다.
@@ -21,19 +25,22 @@ def compute_similarity(
         sims_matrix: 이미지-태그 간 유사도 행렬 [N, T]
     """
     # einsum: [N, 512(d)] · [T, 4(p), 512(d)]ᵀ → [N, T, 4(p)]
-    sims_per_prompt = torch.einsum("nd,tpd->ntp", image_features, text_features)
-    
+    sims_per_prompt = torch.einsum(
+        "nd,tpd->ntp", image_features, text_features
+    )
+
     # 태그별 유사도를 프롬프트별 유사도의 평균으로 선택 → [N, T]
     sims_matrix = sims_per_prompt.mean(dim=-1)
-    
+
     return sims_matrix
 
 
+@log_flow
 def apply_tag_boosts(
     sims_matrix: torch.Tensor,
     categories: List[str],
     tag_boosts: Dict[str, float],
-    threshold: float = 0.22
+    threshold: float = 0.22,
 ) -> torch.Tensor:
     """
     특정 태그에 대해 유사도 점수를 보정합니다.
@@ -51,14 +58,16 @@ def apply_tag_boosts(
         if tag in tag_boosts:
             mask = sims_matrix[:, i] <= threshold
             sims_matrix[mask, i] *= tag_boosts[tag]
-    
+
     return sims_matrix
 
 
+@log_flow
 def select_topk_tags_per_image(
     sims_matrix: torch.Tensor,
     categories: List[str],
-    k: int = 3
+    k: int = 10,
+    threshold: float = 0.21,
 ) -> List[List[Tuple[str, float]]]:
     """
     각 이미지별로 상위 k개의 태그를 선택합니다.
@@ -67,30 +76,70 @@ def select_topk_tags_per_image(
         sims_matrix: 유사도 행렬 [N, T]
         categories: 카테고리 리스트
         k: 각 이미지당 선택할 태그 수
+        threshold: 태그 선택 임계값 (score ≥ threshold)
 
     Returns:
         각 이미지별 topk 태그 정보 [(태그, 점수), ...]
     """
     topk_scores, topk_indices = torch.topk(sims_matrix, k=k, dim=1)
     topk_info = [
-        [(categories[idx], score.item()) for idx, score in zip(indices, scores)]
+        [
+            (categories[idx], score.item())
+            for idx, score in zip(indices, scores)
+            if score.item() >= threshold
+        ]
         for indices, scores in zip(topk_indices, topk_scores)
     ]
-    
     return topk_info
 
 
+@log_flow
+def refine_categories_by_parent(
+    topk_info: List[List[Tuple[str, float]]],
+    parent_categories: Dict[str, List[str]],
+    concepts: List[str],
+) -> List[List[Tuple[str, float]]]:
+    """
+    카테고리 리스트를 부모 카테고리를 기준으로 정제합니다.
+
+    Args:
+        topk_info: 각 이미지별 topk 태그 정보 [(태그, 점수), ...]
+        parent_categories: 카테고리 별 부모 카테고리 딕셔너리
+        concepts: 사용자가 요청한 앨범 컨셉
+
+    Returns:
+        정제된 카테고리 리스트
+
+    """
+
+    refined_topk_info = []
+    for topk_info_per_image in topk_info:
+        topk_dict = dict(topk_info_per_image)
+        for tag, score in topk_info_per_image:
+            del topk_dict[tag]
+            parent_tags = parent_categories.get(tag, [])
+            for parent_tag in parent_tags:
+                if parent_tag in concepts:
+                    topk_dict[tag] = score
+                topk_dict[parent_tag] = max(
+                    topk_dict.get(parent_tag, 0), score - 0.001
+                )
+        refined_topk_info.append(list(topk_dict.items()))
+    return refined_topk_info
+
+
+@log_flow
 def compute_tag_representative_scores(
     topk_info: List[List[Tuple[str, float]]],
     categories: List[str],
     tau: float = 0.28,
-    lambda_boost: float = 0.5
+    lambda_boost: float = 0.5,
 ) -> List[Tuple[str, float]]:
     """
     각 태그의 대표성 점수를 계산합니다.
 
     Args:
-        topk_info: 각 이미지별 top3 태그 정보 [(태그, 점수), ...]
+        topk_info: 각 이미지별 topk 태그 정보 [(태그, 점수), ...]
         categories: 카테고리 리스트
         tau: 신뢰도 임계값
         lambda_boost: 부스트 가중치
@@ -100,21 +149,24 @@ def compute_tag_representative_scores(
     """
     sum_scores = torch.zeros(len(categories))
     bonus_scores = torch.zeros(len(categories))
-    
+
     for image_tags in topk_info:
         for tag, score in image_tags:
             tag_idx = categories.index(tag)
             sum_scores[tag_idx] += score
             if score > tau:
                 bonus_scores[tag_idx] += score
-    
+
     tag_representative_scores = sum_scores + lambda_boost * bonus_scores
-    return [(categories[i], score.item()) for i, score in enumerate(tag_representative_scores)]
+    return [
+        (categories[i], score.item())
+        for i, score in enumerate(tag_representative_scores)
+    ]
 
 
+@log_flow
 def select_representative_categories(
-    tag_representative_scores: List[Tuple[str, float]],
-    k: int = 5
+    tag_representative_scores: List[Tuple[str, float]], k: int = 5
 ) -> List[Tuple[str, float]]:
     """
     대표성 점수가 가장 높은 상위 k개 태그를 선택합니다.
@@ -128,19 +180,22 @@ def select_representative_categories(
 
     """
     # 점수 기준으로 정렬하여 상위 k개 선택
-    return sorted(tag_representative_scores, key=lambda x: x[1], reverse=True)[:k]
+    return sorted(tag_representative_scores, key=lambda x: x[1], reverse=True)[
+        :k
+    ]
 
 
+@log_flow
 def classify_images_by_representative_tags(
     topk_info: List[List[Tuple[str, float]]],
     representative_tags: List[Tuple[str, float]],
-    threshold: float = 0.21
+    threshold: float = 0.21,
 ) -> Dict[str, List[int]]:
     """
     1차 이미지 분류를 수행합니다.
 
     Args:
-        topk_info: 각 이미지별 top3 태그 정보 [(태그, 점수), ...]
+        topk_info: 각 이미지별 topk 태그 정보 [(태그, 점수), ...]
         representative_tags: 대표 태그 리스트 [(태그, 점수), ...]
         threshold: 유사도 임계값
 
@@ -150,34 +205,35 @@ def classify_images_by_representative_tags(
         - value: [이미지_인덱스, ...]
     """
     rep_tags = {tag for tag, _ in representative_tags}
-    
+
     category_to_images = defaultdict(list)
-    
+
     for i, image_tags in enumerate(topk_info):
-        # top3 태그를 순서대로 확인
+        # topk 태그를 순서대로 확인
         for tag, score in image_tags:
             if tag in rep_tags and score >= threshold:
                 category_to_images[tag].append(i)
                 break
         else:  # 모든 태그가 조건을 만족하지 않으면
             category_to_images["기타"].append(i)
-    
+
     return dict(category_to_images)
 
 
+@log_flow
 def select_representative_tag_per_category(
     category_to_images: Dict[str, List[int]],
     topk_info: List[List[Tuple[str, float]]],
     categories: List[str],
     tau: float = 0.28,
-    lambda_boost: float = 0.5
+    lambda_boost: float = 0.5,
 ) -> Dict[str, Tuple[str, float]]:
     """
     각 카테고리별로 대표 태그를 선정합니다.
 
     Args:
         category_to_images: 카테고리별 이미지 인덱스 {카테고리: [이미지_인덱스, ...]}
-        topk_info: 각 이미지별 top3 태그 정보 [(태그, 점수), ...]
+        topk_info: 각 이미지별 topk 태그 정보 [(태그, 점수), ...]
         tau: 신뢰도 임계값
         lambda_boost: 부스트 가중치
 
@@ -185,32 +241,32 @@ def select_representative_tag_per_category(
         카테고리별 대표 태그 정보 {카테고리: (대표_태그, 점수)}
     """
     category_to_rep_tag = {}
-    
+
     for category, image_indices in category_to_images.items():
         if category == "기타":
             continue
-            
+
         category_topk_info = [topk_info[i] for i in image_indices]
-        
+
         tag_representetiva_scores = compute_tag_representative_scores(
-            category_topk_info,
-            categories,
-            tau,
-            lambda_boost
+            category_topk_info, categories, tau, lambda_boost
         )
-        
-        rep_tag = select_representative_categories(tag_representetiva_scores, k=1)[0]
-        
+
+        rep_tag = select_representative_categories(
+            tag_representetiva_scores, k=1
+        )[0]
+
         category_to_rep_tag[category] = rep_tag
-    
+
     return category_to_rep_tag
 
 
+@log_flow
 def reclassify_images_by_new_rep_tags(
     category_to_images: Dict[str, List[int]],
     category_to_rep_tag: Dict[str, Tuple[str, float]],
     topk_info: List[List[Tuple[str, float]]],
-    threshold: float = 0.21
+    threshold: float = 0.21,
 ) -> Dict[str, List[int]]:
     """
     새로운 대표 태그를 기준으로 이미지를 재분류합니다.
@@ -218,41 +274,41 @@ def reclassify_images_by_new_rep_tags(
     Args:
         category_to_images: 카테고리별 이미지 인덱스 {카테고리: [이미지_인덱스, ...]}
         category_to_rep_tag: 카테고리별 새로운 대표 태그 {카테고리: (대표_태그, 점수)}
-        topk_info: 각 이미지별 top3 태그 정보 [(태그, 점수), ...]
+        topk_info: 각 이미지별 topk 태그 정보 [(태그, 점수), ...]
         threshold: 유사도 임계값
 
     Returns:
         재분류된 카테고리별 이미지 인덱스
     """
     new_category_to_images = defaultdict(list)
-    
+
     for category, image_indices in category_to_images.items():
         if category == "기타":
             # 기타 카테고리는 그대로 유지
             new_category_to_images["기타"].extend(image_indices)
             continue
-            
+
         new_rep_tag, _ = category_to_rep_tag[category]
-        
+
         # 기존 카테고리와 새로운 대표 태그가 같으면 재분류하지 않음
         if category == new_rep_tag:
             new_category_to_images[category].extend(image_indices)
             continue
-        
+
         # 새로운 대표 태그로 재분류
         for img_idx in image_indices:
-            # top3 태그 중에 새로운 대표 태그가 있는지 확인
+            # topk 태그 중에 새로운 대표 태그가 있는지 확인
             found = False
             for tag, score in topk_info[img_idx]:
                 if tag == new_rep_tag and score >= threshold:
                     new_category_to_images[new_rep_tag].append(img_idx)
                     found = True
                     break
-            
+
             # 새로운 대표 태그가 없거나 임계값 미만이면 기타로
             if not found:
                 new_category_to_images["기타"].append(img_idx)
-    
+
     return dict(new_category_to_images)
 
 
@@ -265,7 +321,7 @@ def categorize_images(
     tag_boosts: Optional[Dict[str, float]] = None,
     tau: float = 0.28,
     lambda_boost: float = 0.5,
-    threshold: float = 0.21
+    threshold: float = 0.23,
 ) -> Dict[str, List[str]]:  # 반환 타입을 Dict[str, List[str]]로 변경
     """
     이미지들을 카테고리별로 분류합니다.
@@ -275,6 +331,8 @@ def categorize_images(
         image_names: 이미지 이름 리스트 [N]
         text_features: 태그 특징 벡터 [T, 4, D]
         categories: 카테고리 리스트
+        parent_categories: 카테고리 별 부모 카테고리 딕셔너리(예: {카테고리: [부모1, 부모2, ...]})
+        concepts: 사용자가 요청한 앨범 컨셉
         tag_boosts: 태그별 보정 계수 (기본값: None)
         tau: 신뢰도 임계값
         lambda_boost: 부스트 가중치
@@ -285,30 +343,50 @@ def categorize_images(
     """
     # 1. 이미지-태그 유사도 계산 및 보정
     sims_matrix = compute_similarity(image_features, text_features)
-    boosted_sims_matrix = apply_tag_boosts(sims_matrix, categories, tag_boosts, threshold) if tag_boosts else sims_matrix
-    
-    # 2. 이미지별 top3 태그 추출
-    topk_info = select_topk_tags_per_image(boosted_sims_matrix, categories)
-    
-    # 3. 대표 태그 선정
-    tag_scores = compute_tag_representative_scores(topk_info, categories, tau, lambda_boost)
+    boosted_sims_matrix = (
+        apply_tag_boosts(sims_matrix, categories, tag_boosts, threshold)
+        if tag_boosts
+        else sims_matrix
+    )
+
+    # 2. 이미지별 top10 태그 추출(threshold 0.21 이상)
+    topk_info = select_topk_tags_per_image(
+        boosted_sims_matrix, categories, threshold=threshold
+    )
+    logger.info(
+        "이미지별 topk 태그 추출 완료",
+        extra={
+            "total_images": len(topk_info),
+            "topk_per_image": [len(tags) for tags in topk_info],
+        },
+    )
+
+    # # 3. 카테고리 정제 (부모 카테고리 포함)
+    # refined_topk_info = refine_categories_by_parent(
+    #     topk_info, parent_categories, concepts
+    # )
+
+    # 4. 대표 태그 선정
+    tag_scores = compute_tag_representative_scores(
+        topk_info, categories, tau, lambda_boost
+    )
     representative_tags = select_representative_categories(tag_scores)
-    
-    # 4. 1차 분류
+
+    # 5. 1차 분류
     category_to_images = classify_images_by_representative_tags(
         topk_info, representative_tags, threshold
     )
-    
-    # 5. 각 카테고리별 새로운 대표 태그 선정
+
+    # 6. 각 카테고리별 새로운 대표 태그 선정
     category_to_rep_tag = select_representative_tag_per_category(
         category_to_images, topk_info, categories, tau, lambda_boost
     )
-    
-    # 6. 새로운 대표 태그로 재분류
+
+    # 7. 새로운 대표 태그로 재분류
     final_category_to_indices = reclassify_images_by_new_rep_tags(
         category_to_images, category_to_rep_tag, topk_info, threshold
     )
-    
+
     # 인덱스를 이미지 이름으로 변환
     return {
         category: [image_names[idx] for idx in indices]
