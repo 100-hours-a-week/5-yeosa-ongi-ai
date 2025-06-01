@@ -40,6 +40,10 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
     concepts = req.concepts
     image_names = req.images
 
+    logger.info(
+        "상태 변수 로드 완료",
+    )
+
     # 2. 이미지 임베딩 로드
     embed_load_func = partial(
         get_cached_embeddings_parallel,
@@ -62,8 +66,20 @@ async def categorize_controller(req: ImageConceptRequest, request: Request) -> J
         )
 
     # 4. 이미지 임베딩 정규화
-    image_features = torch.stack(image_features)
+    # 임베딩이 이미 텐서인 경우와 리스트인 경우를 모두 처리
+    processed_features = []
+    for feature in image_features:
+        if isinstance(feature, list):
+            feature = torch.tensor(feature, dtype=torch.float32)
+        processed_features.append(feature)
+    
+    image_features = torch.stack(processed_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
+    
+    logger.info(
+        "임베딩 로딩 완료",
+        extra={"total_images": len(req.images)},
+    )
     
     # 5. 카테고리 분류
     task_func = partial(
