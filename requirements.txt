@@ -1,6 +1,7 @@
 # --- Core Backend Framework ---
 fastapi==0.115.12
 uvicorn==0.34.0
+gunicorn==23.0.0
 
 # --- Async & I/O ---
 aiofiles==24.1.0
@@ -70,6 +71,9 @@ cycler==0.12.1
 
 # --- Model Validation ---
 pydantic==2.11.3
+
+# --- Caching ---
+redis==6.2.0
 
 # --- Setup Tool (빌드시만 필요, 실행시 제거 가능) ---
 setuptools==79.0.1
