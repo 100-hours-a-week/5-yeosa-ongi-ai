@@ -5,7 +5,6 @@ from typing import List, Dict, Any
 import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from fastapi import Request, HTTPException
 
 from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageCategoryGroup, ImageRequest
@@ -60,9 +59,9 @@ async def categorize_controller(req: ImageRequest, request: Request) -> JSONResp
             "일부 이미지의 임베딩이 없음",
             extra={"missing_count": len(missing_keys)},
         )
-        raise HTTPException(
+        return JSONResponse(
             status_code=428,
-            detail={"message": "embedding_required", "data": missing_keys},
+            content={"message": "embedding_required", "data": missing_keys},
         )
 
     # 4. 이미지 임베딩 정규화
