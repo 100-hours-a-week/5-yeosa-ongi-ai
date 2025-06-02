@@ -321,7 +321,7 @@ def categorize_images(
     tag_boosts: Optional[Dict[str, float]] = None,
     tau: float = 0.28,
     lambda_boost: float = 0.5,
-    threshold: float = 0.23,
+    threshold: float = 0,
 ) -> Dict[str, List[str]]:  # 반환 타입을 Dict[str, List[str]]로 변경
     """
     이미지들을 카테고리별로 분류합니다.
