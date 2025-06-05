@@ -28,10 +28,15 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
     클라이언트로부터 이미지 파일명을 받아 GPU 서버에 전달하고,
     임베딩 결과를 받아 캐싱하는 컨트롤러입니다.
     """
-    print(f"[START] 이미지 임베딩 요청 시작 - 총 이미지 수: {len(req.images)}")
 
     try:
         gpu_client = request.app.state.gpu_client
+
+        if req.images:
+            first_image = req.images[0]
+            print(f"[CHECK] GPU에 요청된 첫 번째 이미지 파일명: {first_image}")
+        else:
+            print("[WARN] 요청 이미지 리스트가 비어 있습니다.")
 
         # ✅ 전송 시작 시각
         send_time_str = now_str()
@@ -46,7 +51,7 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
         t2 = time.time()
         recv_time_str = now_str()
         print(f"[INFO] GPU 서버 응답 수신 시각: {recv_time_str}")
-        print(f"[INFO] 요청-응답 소요 시간: {format_elapsed(t2 - t1)}")
+        print(f"[INFO] GPU 요청-응답 소요 시간: {format_elapsed(t2 - t1)}")
 
         if response.status_code != 200:
             print(f"[ERROR] GPU 서버 응답 실패 - Status: {response.status_code}")
@@ -59,7 +64,6 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
         t3 = time.time()
         response_obj = pickle.loads(await response.aread())  # bytes → object
         t4 = time.time()
-        print(f"[INFO] 응답 역직렬화 완료: {format_elapsed(t4 - t3)}")
 
         if response_obj.get("message") != "success":
             print(f"[ERROR] GPU 서버 응답 비정상 - message: {response_obj.get('message')}")
@@ -69,14 +73,20 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
             )
 
         result = response_obj["data"]  # Dict[str, List[float]]
-        print(f"[INFO] 임베딩 완료 - 처리된 이미지 수: {len(result)}")
+
+        first_filename = next(iter(result.keys()), None)
+        if first_filename:
+            print(f"[CHECK] GPU 응답 첫 번째 이미지 파일명: {first_filename}")
+        else:
+            print("[WARN] 결과에서 파일명이 하나도 없습니다.")
+
 
         for filename, feature in result.items():
             try:
                 await set_cached_embedding(filename, feature)
             except Exception as e:
                 logger.error(f"[Redis SET ERROR] key='{filename}' failed: {e}", exc_info=True)
-                return HTTPException(
+                raise HTTPException(
                     status_code=500,
                     detail={
                         "message": "embedding succeeded, but caching failed",
@@ -84,7 +94,6 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
                     }
                 )
 
-        print("[SUCCESS] 임베딩 결과 캐싱 완료")
         return JSONResponse(status_code=201, content={"message": "success", "data": None})
 
     except Exception as e:

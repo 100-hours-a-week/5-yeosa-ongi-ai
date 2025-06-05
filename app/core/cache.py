@@ -44,6 +44,7 @@ async def get_cached_embedding(key: str) -> Any | None:
 async def set_cached_embedding(key: str, value: Any) -> None:
     redis = get_redis()
     try:
+        print("-----[Redis Set Start]-----")
         if isinstance(value, torch.Tensor):
             value = value.cpu().float().tolist()
 
@@ -52,12 +53,15 @@ async def set_cached_embedding(key: str, value: Any) -> None:
         result = await redis.set(key, json.dumps(value), ex=ttl)
 
         if not result:
+            print(f"Redis SET failed for key='{key}' (result=False)")
             raise RuntimeError(f"Redis SET failed for key='{key}' (result=False)")
 
         t1 = time.perf_counter()
+        print(f"[Redis SET] key='{key}' succeeded, took {t1 - t0:.4f} seconds, TTL={ttl}")
         logger.info(f"[Redis SET] key='{key}' succeeded, took {t1 - t0:.4f} seconds, TTL={ttl}")
 
     except Exception as e:
+        print(f"[Redis SET ERROR] key='{key}' failed: {e}")
         logger.error(f"[Redis SET ERROR] key='{key}' failed: {e}", exc_info=True)
         raise
 
