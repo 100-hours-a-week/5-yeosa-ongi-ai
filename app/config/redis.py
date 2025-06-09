@@ -25,7 +25,7 @@ def init_redis() -> Redis:
         host=REDIS_HOST,
         port=REDIS_PORT,
         db=REDIS_DB,
-        max_connections=20,
+        max_connections=100,
         decode_responses=True,
     )
     _redis = Redis(connection_pool=pool)
