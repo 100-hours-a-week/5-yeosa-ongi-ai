@@ -28,7 +28,7 @@ matplotlib==3.10.1
 seaborn==0.13.2
 
 # --- Image Processing ---
-opencv-python==4.11.0.86
+opencv-contrib-python==4.11.0.86
 Pillow==11.2.1  # pillow와 중복, 하나만 유지
 
 # --- Logging / Utils ---
