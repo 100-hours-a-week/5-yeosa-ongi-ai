@@ -1,4 +1,4 @@
-workers = 3
+workers = 2
 
 # 워커 클래스는 Uvicorn
 worker_class = "uvicorn.workers.UvicornWorker"
