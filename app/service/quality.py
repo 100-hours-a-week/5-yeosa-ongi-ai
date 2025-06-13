@@ -195,7 +195,18 @@ async def get_clip_low_quality_images(
         extra={"total_images": len(image_refs)},
     )
     # 1. 이미지 임베딩 로드
-    image_features, missing_keys = get_cached_embeddings_parallel(image_refs)
+    # image_features, missing_keys = get_cached_embeddings_parallel(image_refs)
+
+    # # 1. 이미지 임베딩 로드
+    logger.debug("이미지 임베딩 로드 시작")
+    image_load_func = partial(
+        get_cached_embeddings_parallel,
+        image_refs,
+    )
+    image_features, missing_keys = await loop.run_in_executor(
+        None,
+        image_load_func,
+    )
 
     # 2. 임베딩이 없는 이미지 처리
     if missing_keys:
