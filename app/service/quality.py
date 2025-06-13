@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from functools import partial
 from typing import Dict, List, Literal, Tuple
 
@@ -195,18 +194,13 @@ async def get_clip_low_quality_images(
         "저품질 이미지 검색 시작",
         extra={"total_images": len(image_refs)},
     )
-    loop = asyncio.get_running_loop()
+    
     
     # 1. 이미지 임베딩 로드
-    image_load_func = partial(
-        get_cached_embeddings_parallel,
-        image_refs,
-    )
-    image_features, missing_keys = await loop.run_in_executor(
-        None,
-        image_load_func,
-    )
-
+    print("quality 임베딩 로드 전")
+    image_features, missing_keys = await get_cached_embeddings_parallel(image_names)
+    print("quality 임베딩 로드 후")
+    
     # 2. 임베딩이 없는 이미지 처리
     if missing_keys:
         logger.warning(
