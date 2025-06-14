@@ -64,6 +64,13 @@ steps:
       - '-c'
       - |
         set -e
+        echo ▶ SSH 키 존재 여부 확인
+        if [ -z "$$SSH_KEYS" ]; then
+          echo ❌ SSH_KEYS secret is missing or empty. Cannot proceed.
+          exit 1
+        fi
+        echo ✅ SSH_KEYS 시크릿 확인 완료
+        
         echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
         gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
           --network=dev-ongi-vpc \
