@@ -1,0 +1,108 @@
+substitutions:
+  _IMAGE_TAG: ""
+  _TEMPLATE_NAME: ""
+
+serviceAccount: projects/dev-ongi-3-tier/serviceAccounts/github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
+availableSecrets:
+  secretManager:
+    - versionName: "projects/dev-ongi-3-tier/secrets/SSH_KEYS/versions/latest"
+      env: SSH_KEYS
+    - versionName: "projects/dev-ongi-3-tier/secrets/APP_ENV/versions/latest"
+      env: APP_ENV
+    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_ACCESS_KEY/versions/latest"
+      env: AWS_ACCESS_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_REGION/versions/latest"
+      env: AWS_REGION
+    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_SECRET_KEY/versions/latest"
+      env: AWS_SECRET_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/GCP_KEY/versions/latest"
+      env: GCP_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/GCS_BUCKET_NAME/versions/latest"
+      env: GCS_BUCKET_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/GPU_SERVER_BASE_URL/versions/latest"
+      env: GPU_SERVER_BASE_URL
+    - versionName: "projects/dev-ongi-3-tier/secrets/LOCAL_IMG_PATH/versions/latest"
+      env: LOCAL_IMG_PATH
+    - versionName: "projects/dev-ongi-3-tier/secrets/MODEL_NAME/versions/latest"
+      env: MODEL_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_CACHE_TTL/versions/latest"
+      env: REDIS_CACHE_TTL
+    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_DB/versions/latest"
+      env: REDIS_DB
+    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_HOST/versions/latest"
+      env: REDIS_HOST
+    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_PORT/versions/latest"
+      env: REDIS_PORT
+    - versionName: "projects/dev-ongi-3-tier/secrets/S3_BUCKET_NAME/versions/latest"
+      env: S3_BUCKET_NAME
+
+steps:
+  - id: deploy-fastapi
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    secretEnv:
+      - SSH_KEYS
+      - APP_ENV
+      - AWS_ACCESS_KEY
+      - AWS_REGION
+      - AWS_SECRET_KEY
+      - GCP_KEY
+      - GCS_BUCKET_NAME
+      - GPU_SERVER_BASE_URL
+      - LOCAL_IMG_PATH
+      - MODEL_NAME
+      - REDIS_CACHE_TTL
+      - REDIS_DB
+      - REDIS_HOST
+      - REDIS_PORT
+      - S3_BUCKET_NAME
+    args:
+      - '-c'
+      - |
+        set -e
+        echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
+        gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
+          --network=dev-ongi-vpc \
+          --subnet=dev-ongi-server-subnet \
+          --no-address \
+          --machine-type=n2d-standard-4 \
+          --region=asia-northeast3 \
+          --boot-disk-size=35GB \
+          --image-family=cos-stable \
+          --image-project=cos-cloud \
+          --container-image="asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:${_IMAGE_TAG}" \
+          --container-env=SPRING_PROFILES_ACTIVE=dev \
+          --container-env=APP_ENV=$$APP_ENV \
+          --container-env=AWS_ACCESS_KEY=$$AWS_ACCESS_KEY \
+          --container-env=AWS_REGION=$$AWS_REGION \
+          --container-env=AWS_SECRET_KEY=$$AWS_SECRET_KEY \
+          --container-env=GCP_KEY=$$GCP_KEY \
+          --container-env=GCS_BUCKET_NAME=$$GCS_BUCKET_NAME \
+          --container-env=GPU_SERVER_BASE_URL=$$GPU_SERVER_BASE_URL \
+          --container-env=LOCAL_IMG_PATH=$$LOCAL_IMG_PATH \
+          --container-env=AWS_SECRET_ACCESS_KEY=$$AWS_SECRET_ACCESS_KEY \
+          --container-env=MODEL_NAME=$$MODEL_NAME \
+          --container-env=REDIS_CACHE_TTL=$$REDIS_CACHE_TTL \
+          --container-env=REDIS_DB=$$REDIS_DB \
+          --container-env=REDIS_HOST=$$REDIS_HOST \
+          --container-env=REDIS_PORT=$$REDIS_PORT \
+          --container-env=S3_BUCKET_NAME=$$S3_BUCKET_NAME \
+          --metadata="ssh-keys=$$SSH_KEYS" \
+          --service-account=github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com \
+          --scopes=https://www.googleapis.com/auth/cloud-platform \
+          --tags=dev-ai
+
+        echo ▶ 기존 인스턴스(dev-ai-cicd) 확인 및 삭제
+        if gcloud compute instances describe dev-ai-cicd --zone=asia-northeast3-a > /dev/null 2>&1; then
+          echo ▶ dev-ai-cicd 인스턴스가 존재하므로 삭제합니다
+          gcloud compute instances delete dev-ai-cicd --zone=asia-northeast3-a --quiet
+        fi
+
+        echo ▶ 새 인스턴스 생성
+        gcloud compute instances create dev-ai-cicd \
+          --zone=asia-northeast3-a \
+          --source-instance-template=${_TEMPLATE_NAME}

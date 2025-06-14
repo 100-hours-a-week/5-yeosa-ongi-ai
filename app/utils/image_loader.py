@@ -1,5 +1,5 @@
 import os
-import asyncio, time, requests
+import asyncio, time, requests, tempfile
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
@@ -23,7 +23,7 @@ LOCAL_IMG_PATH_raw = os.getenv("LOCAL_IMG_PATH")
 
 # GCS
 GCS_BUCKET_NAME_raw = os.getenv("GCS_BUCKET_NAME")
-GCP_KEY_PATH_raw = os.getenv("GCP_KEY_PATH")
+GCP_KEY_raw = os.getenv("GCP_KEY")
 
 # S3
 S3_BUCKET_NAME_raw = os.getenv("S3_BUCKET_NAME")
@@ -39,7 +39,7 @@ if LOCAL_IMG_PATH_raw is None:
 # GCS
 if GCS_BUCKET_NAME_raw is None:
     raise EnvironmentError("BUCKET_NAME은 .env에 설정되어야 합니다.")
-if GCP_KEY_PATH_raw is None:
+if GCP_KEY_raw is None:
     raise EnvironmentError("GCP_KEY_PATH은 .env에 설정되어야 합니다.")
 
 # S3
@@ -54,7 +54,7 @@ if AWS_REGION_raw is None:
 LOCAL_IMG_PATH: str = LOCAL_IMG_PATH_raw
 
 GCS_BUCKET_NAME: str = GCS_BUCKET_NAME_raw
-GCP_KEY_PATH: str = GCP_KEY_PATH_raw
+GCP_KEY: str = GCP_KEY_raw
 
 S3_BUCKET_NAME: str = S3_BUCKET_NAME_raw
 AWS_ACCESS_KEY_ID: str = AWS_ACCESS_KEY_ID_raw
@@ -141,7 +141,7 @@ class GCSImageLoader(BaseImageLoader):
     """Google Cloud Storage(GCS)에서 이미지를 로드하는 클래스입니다."""
 
     def __init__(
-        self, bucket_name: str = GCS_BUCKET_NAME, key_path: str = GCP_KEY_PATH
+        self, bucket_name: str = GCS_BUCKET_NAME, gcp_key: str = GCP_KEY
     ):
         """
         Args:
@@ -149,7 +149,10 @@ class GCSImageLoader(BaseImageLoader):
             key_path (str): 서비스 계정 키 경로 (.json)
 
         """
-        self.client = Storage(service_file=key_path)
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp:
+            tmp.write(gcp_key)
+            self._temp_key_path = tmp.name
+        self.client = Storage(service_file=self._temp_key_path)
         self.bucket_name = bucket_name
 
     async def _download(self, file_name: str) -> bytes:
