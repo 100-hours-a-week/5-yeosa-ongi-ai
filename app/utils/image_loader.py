@@ -1,18 +1,15 @@
 import os
-import asyncio, time, requests, tempfile
+import asyncio, requests, tempfile
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
 
 import aiofiles
-import boto3
 import aioboto3
 import cv2
 import numpy as np
 from dotenv import load_dotenv
 from botocore.config import Config
 from gcloud.aio.storage import Storage
-from starlette.concurrency import run_in_threadpool
 
 from app.config.settings import ImageMode, APP_ENV, AppEnv
 
