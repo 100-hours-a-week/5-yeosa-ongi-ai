@@ -67,6 +67,6 @@ jobs:
       - name: Trigger Cloud Build
         run: |
           gcloud builds submit . \
-            --config=${{ github.workspace }}/.gcp/dev-cloudbuild.yaml \
+            --config=${{ github.workspace }}/.gcp/cloudbuild-dev.yaml \
             --substitutions=_IMAGE_TAG=dev-${{ github.sha }},_TEMPLATE_NAME=ongi-ai-dev-${{ github.run_number }} \
             --service-account=projects/dev-ongi-3-tier/serviceAccounts/github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com
