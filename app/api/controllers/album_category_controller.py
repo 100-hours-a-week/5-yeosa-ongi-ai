@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 import torch
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi import Request, HTTPException
 
 from app.core.cache import get_cached_embeddings_parallel
 from app.schemas.album_schema import ImageConceptRequest
@@ -49,14 +50,19 @@ async def categorize_controller(
     )
 
     # 2. 이미지 임베딩 로드
-    embed_load_func = partial(
-        get_cached_embeddings_parallel,
-        image_names,
-    )
-    image_features, missing_keys = await loop.run_in_executor(
-        None,
-        embed_load_func,
-    )
+    print("categorize_controller 임베딩 로드 전")
+    image_features, missing_keys = await get_cached_embeddings_parallel(image_names)
+    print("categorize_controller 임베딩 로드 후")
+
+    # embed_load_func = partial(
+    #     get_cached_embeddings_parallel,
+    #     image_names,
+    # )
+    # image_features, missing_keys = await loop.run_in_executor(
+    #     None,
+    #     embed_load_func,
+    # )
+    print(missing_keys)
 
     # 3. 임베딩이 없는 이미지 처리
     if missing_keys:

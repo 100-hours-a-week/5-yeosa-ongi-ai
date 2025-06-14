@@ -18,6 +18,7 @@ import torch
 from fastapi import FastAPI
 
 from app.api import api_router
+from app.config.redis import init_redis
 from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
 from app.middleware.error_handler import setup_exception_handler
 from app.model.aesthetic_regressor import load_aesthetic_regressor
@@ -58,11 +59,19 @@ async def lifespan(app: FastAPI):
     app.state.category_dict = category_dict
     app.state.quality_text_features = quality_text_features
     app.state.quality_fields = quality_fields
+    app.state.redis = init_redis()
     app.state.gpu_client = httpx.AsyncClient(
         base_url=GPU_SERVER_BASE_URL, 
         timeout=60.0,
         headers={"Content-Type": "application/json"},
     )
+
+    try:
+        pong = await app.state.redis.ping()
+        if pong:
+            print("Redis 연결 성공")
+    except Exception as e:
+        print(f"Redis 연결 실패: {e}")
 
     if IMAGE_MODE == IMAGE_MODE.S3:
         if isinstance(app.state.image_loader, S3ImageLoader):
