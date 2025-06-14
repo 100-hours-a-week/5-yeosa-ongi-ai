@@ -56,6 +56,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+        
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
