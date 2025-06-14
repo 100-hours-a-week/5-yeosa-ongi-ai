@@ -84,6 +84,11 @@ async def lifespan(app: FastAPI):
         if isinstance(app.state.image_loader, GCSImageLoader):
             await app.state.image_loader.client.close()
 
+            temp_path = getattr(app.state.image_loader, "_temp_file_path", None)
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+                print(f"임시 GCP 키 파일 삭제됨: {temp_path}")
+
     if IMAGE_MODE == IMAGE_MODE.S3:
         if isinstance(app.state.image_loader, S3ImageLoader):
             await app.state.image_loader.close_client()
