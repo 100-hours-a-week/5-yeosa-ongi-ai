@@ -9,35 +9,35 @@ options:
 
 availableSecrets:
   secretManager:
-    - versionName: "projects/dev-ongi-3-tier/secrets/SSH_KEYS/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_ssh_keys/versions/latest"
       env: SSH_KEYS
-    - versionName: "projects/dev-ongi-3-tier/secrets/APP_ENV/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_app_env/versions/latest"
       env: APP_ENV
-    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_ACCESS_KEY/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_access_key/versions/latest"
       env: AWS_ACCESS_KEY
-    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_REGION/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_region/versions/latest"
       env: AWS_REGION
-    - versionName: "projects/dev-ongi-3-tier/secrets/AWS_SECRET_KEY/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_secret_key/versions/latest"
       env: AWS_SECRET_KEY
-    - versionName: "projects/dev-ongi-3-tier/secrets/GCP_KEY/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gcp_key/versions/latest"
       env: GCP_KEY
-    - versionName: "projects/dev-ongi-3-tier/secrets/GCS_BUCKET_NAME/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gcs_bucket_name/versions/latest"
       env: GCS_BUCKET_NAME
-    - versionName: "projects/dev-ongi-3-tier/secrets/GPU_SERVER_BASE_URL/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gpu_server_base_url/versions/latest"
       env: GPU_SERVER_BASE_URL
-    - versionName: "projects/dev-ongi-3-tier/secrets/LOCAL_IMG_PATH/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_local_img_path/versions/latest"
       env: LOCAL_IMG_PATH
-    - versionName: "projects/dev-ongi-3-tier/secrets/MODEL_NAME/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_model_name/versions/latest"
       env: MODEL_NAME
-    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_CACHE_TTL/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_cache_ttl/versions/latest"
       env: REDIS_CACHE_TTL
-    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_DB/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_db/versions/latest"
       env: REDIS_DB
-    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_HOST/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_host/versions/latest"
       env: REDIS_HOST
-    - versionName: "projects/dev-ongi-3-tier/secrets/REDIS_PORT/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_port/versions/latest"
       env: REDIS_PORT
-    - versionName: "projects/dev-ongi-3-tier/secrets/S3_BUCKET_NAME/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_s3_bucket_name/versions/latest"
       env: S3_BUCKET_NAME
 
 steps:
@@ -70,7 +70,7 @@ steps:
           exit 1
         fi
         echo ✅ SSH_KEYS 시크릿 확인 완료
-        
+
         echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
         gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
           --network=dev-ongi-vpc \
