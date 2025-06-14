@@ -8,7 +8,7 @@ on:
       - closed
 
 jobs:
-  build-only:
+  build-docker:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -41,6 +41,21 @@ jobs:
         run: |
           docker build -t asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:$TAG .
           docker push asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:$TAG
+          
+  deploy-cloudbuild:
+    needs: build-docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: dev-ongi-3-tier
 
       - name: Trigger Cloud Build
         run: |
