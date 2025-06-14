@@ -57,6 +57,13 @@ jobs:
         with:
           project_id: dev-ongi-3-tier
 
+      - name: 🔍 Debug: show workspace structure
+        run: |
+          echo "Workspace: ${{ github.workspace }}"
+          ls -al ${{ github.workspace }}
+          ls -al ${{ github.workspace }}/.gcp || echo ".gcp not found!"
+
+
       - name: Trigger Cloud Build
         run: |
           gcloud builds submit . \
