@@ -197,10 +197,11 @@ async def get_clip_low_quality_images(
     
     
     # 1. 이미지 임베딩 로드
+
     print("quality 임베딩 로드 전")
     image_features, missing_keys = await get_cached_embeddings_parallel(image_refs)
     print("quality 임베딩 로드 후")
-    
+
     # 2. 임베딩이 없는 이미지 처리
     if missing_keys:
         logger.warning(

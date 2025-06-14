@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi import Request, HTTPException
 
 from app.core.cache import get_cached_embeddings_parallel
-from app.schemas.album_schema import ImageCategoryGroup, ImageRequest
+from app.schemas.album_schema import ImageConceptRequest
 from app.service.category import categorize_images
 from app.utils.logging_decorator import log_exception, log_flow
 
@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 @log_flow
-async def categorize_controller(req: ImageRequest, request: Request) -> JSONResponse:
+async def categorize_controller(
+    req: ImageConceptRequest, request: Request
+) -> JSONResponse:
     """
     이미지를 카테고리별로 분류하는 컨트롤러입니다.
 
@@ -34,10 +36,18 @@ async def categorize_controller(req: ImageRequest, request: Request) -> JSONResp
     )
 
     # 1. 상태 변수 로드
-    translated_categories = request.app.state.translated_categories
-    text_features = request.app.state.category_text_features
+    parent_categories = request.app.state.parent_categories
+    parent_embeds = request.app.state.parent_embeds
+    embed_dict = request.app.state.embed_dict
+    category_dict = request.app.state.category_dict
+
     loop = request.app.state.loop
+    concepts = req.concepts
     image_names = req.images
+
+    logger.info(
+        "상태 변수 로드 완료",
+    )
 
     # 2. 이미지 임베딩 로드
     print("categorize_controller 임베딩 로드 전")
@@ -66,18 +76,41 @@ async def categorize_controller(req: ImageRequest, request: Request) -> JSONResp
         )
 
     # 4. 이미지 임베딩 정규화
-    image_features = torch.stack(image_features)
+    # 임베딩이 이미 텐서인 경우와 리스트인 경우를 모두 처리
+    processed_features = []
+    for feature in image_features:
+        if isinstance(feature, list):
+            feature = torch.tensor(feature, dtype=torch.float32)
+        processed_features.append(feature)
+
+    image_features = torch.stack(processed_features)
     image_features /= image_features.norm(dim=-1, keepdim=True)
-    
-    # 5. 카테고리 분류
+
+    logger.info(
+        "임베딩 로딩 완료",
+        extra={"total_images": len(req.images)},
+    )
+
+    # 5. Concept에 따른 카테고리 정제
+    refined_categories = list(parent_categories)
+    refined_embeds = list(parent_embeds)
+    for concept in concepts:
+        concept_category = category_dict.get(concept, [])
+        concept_embed = embed_dict.get(concept, [])
+        refined_categories.extend(concept_category)
+        refined_embeds.extend(concept_embed)
+
+    refined_embeds = torch.stack(refined_embeds, dim=0)
+
+    # 6. 카테고리 분류
     task_func = partial(
         categorize_images,
         image_features.cpu(),
         image_names,
-        text_features.cpu(),
-        translated_categories,
+        refined_embeds.cpu(),
+        refined_categories,
     )
-    
+
     categorized = await loop.run_in_executor(None, task_func)
 
     # 6. 응답 형식 변환
