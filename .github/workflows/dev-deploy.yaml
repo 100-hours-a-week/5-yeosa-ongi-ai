@@ -15,6 +15,15 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          ref: dev
+          
+      - name: Check workspace contents
+        run: |
+          echo "Workspace: $PWD"
+          ls -al
+          ls -al .gcp || echo ".gcp 디렉토리 없음"
+          ls -al app || echo "app 디렉토리 없음"
 
       - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
