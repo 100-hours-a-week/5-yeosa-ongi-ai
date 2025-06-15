@@ -75,16 +75,14 @@ steps:
         gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
           --network=dev-ongi-vpc \
           --subnet=dev-ongi-server-subnet \
-          --no-address \
           --machine-type=n2d-standard-4 \
           --region=asia-northeast3 \
           --boot-disk-size=35GB \
           --image-family=cos-stable \
           --image-project=cos-cloud \
           --container-image="asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:${_IMAGE_TAG}" \
-          --container-env=PROJECT_ID=$$PROJECT_ID \
           --container-arg=--bind=0.0.0.0:8000 \
-          --container-port=8000 \
+          --container-env=PROJECT_ID=$$PROJECT_ID \
           --metadata="ssh-keys=$$SSH_KEYS" \
           --service-account=github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com \
           --scopes=https://www.googleapis.com/auth/cloud-platform \
