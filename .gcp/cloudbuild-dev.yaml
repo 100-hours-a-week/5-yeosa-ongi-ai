@@ -50,6 +50,20 @@ steps:
     entrypoint: bash
     secretEnv:
       - SSH_KEYS
+      - APP_ENV
+      - AWS_ACCESS_KEY
+      - AWS_REGION
+      - AWS_SECRET_KEY
+      - GCP_KEY
+      - GCS_BUCKET_NAME
+      - GPU_SERVER_BASE_URL
+      - LOCAL_IMG_PATH
+      - MODEL_NAME
+      - REDIS_CACHE_TTL
+      - REDIS_DB
+      - REDIS_HOST
+      - REDIS_PORT
+      - S3_BUCKET_NAME
     args:
       - '-c'
       - |
