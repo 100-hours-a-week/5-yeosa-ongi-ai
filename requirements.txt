@@ -77,3 +77,6 @@ redis==6.2.0
 
 # --- Setup Tool (빌드시만 필요, 실행시 제거 가능) ---
 setuptools==79.0.1
+
+# --- CI/CD ---
+google-cloud-secret-manager==2.24.0

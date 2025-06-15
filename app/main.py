@@ -19,6 +19,7 @@ from fastapi import FastAPI
 
 from app.api import api_router
 from app.config.redis import init_redis
+from app.config.secret_loader import load_secrets_from_gcp
 from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
 from app.middleware.error_handler import setup_exception_handler
 from app.model.aesthetic_regressor import load_aesthetic_regressor
@@ -37,6 +38,7 @@ if not GPU_SERVER_BASE_URL:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """서버 실행 시, 모델 및 이미지 로더 초기화 로직입니다."""
+    load_secrets_from_gcp()
     aesthetic_regressor = load_aesthetic_regressor(MODEL_NAME)
     loop = asyncio.get_running_loop()
     executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
