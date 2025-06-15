@@ -46,7 +46,7 @@ pyparsing==3.2.3
 # --- Web ---
 Jinja2==3.1.6
 MarkupSafe==3.0.2
-requests==2.32.3
+requests==2.32.4
 urllib3==2.4.0
 idna==3.10
 certifi==2025.1.31
