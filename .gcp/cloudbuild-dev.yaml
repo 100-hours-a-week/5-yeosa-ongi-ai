@@ -59,11 +59,13 @@ steps:
       - GPU_SERVER_BASE_URL
       - LOCAL_IMG_PATH
       - MODEL_NAME
+      - IMAGE_MODE
       - REDIS_CACHE_TTL
       - REDIS_DB
       - REDIS_HOST
       - REDIS_PORT
       - S3_BUCKET_NAME
+      - PROJECT_ID
     args:
       - '-c'
       - |
