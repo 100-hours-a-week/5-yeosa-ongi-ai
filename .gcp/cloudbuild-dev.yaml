@@ -29,6 +29,8 @@ availableSecrets:
       env: LOCAL_IMG_PATH
     - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_model_name/versions/latest"
       env: MODEL_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_image_mode/versions/latest"
+      env: IMAGE_MODE
     - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_cache_ttl/versions/latest"
       env: REDIS_CACHE_TTL
     - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_db/versions/latest"
