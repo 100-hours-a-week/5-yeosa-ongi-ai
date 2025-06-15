@@ -17,13 +17,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: dev
-          
-      - name: Check workspace contents
-        run: |
-          echo "Workspace: $PWD"
-          ls -al
-          ls -al .gcp || echo ".gcp 디렉토리 없음"
-          ls -al app || echo "app 디렉토리 없음"
 
       - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
@@ -40,7 +33,7 @@ jobs:
         with:
           project_id: dev-ongi-3-tier
 
-      - name: ⚙️ Configure Docker for Artifact Registry
+      - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
@@ -70,13 +63,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: dev-ongi-3-tier
-
-      - name: Debug show workspace structure
-        run: |
-          echo "Workspace: ${{ github.workspace }}"
-          ls -al ${{ github.workspace }}
-          ls -al ${{ github.workspace }}/.gcp || echo ".gcp not found!"
-
 
       - name: Trigger Cloud Build
         run: |
