@@ -81,7 +81,7 @@ steps:
           --scopes=https://www.googleapis.com/auth/cloud-platform \
           --tags=dev-ai
 
-        echo ▶ 기존 인스턴스(dev-ai-cicd) 존재할 경우 삭제
+        echo ▶ 기존 인스턴스 dev-ai-cicd 존재할 경우 삭제
         if gcloud compute instances describe dev-ai-cicd --zone=asia-northeast3-a > /dev/null 2>&1; then
           echo ▶ dev-ai-cicd 인스턴스가 존재하므로 삭제합니다
           gcloud compute instances delete dev-ai-cicd --zone=asia-northeast3-a --quiet
