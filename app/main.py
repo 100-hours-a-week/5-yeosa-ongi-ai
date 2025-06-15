@@ -17,6 +17,9 @@ os.environ["JOBLIB_NUM_THREADS"] = "1"
 import torch
 from fastapi import FastAPI
 
+from app.config.secret_loader import load_secrets_from_gcp
+load_secrets_from_gcp()
+
 from app.api import api_router
 from app.config.redis import init_redis
 from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME, APP_ENV
