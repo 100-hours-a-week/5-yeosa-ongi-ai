@@ -16,6 +16,7 @@ def load_secrets_from_gcp():
         "GCP_KEY": "fastapi_gcp_key",
         "GCS_BUCKET_NAME": "fastapi_gcs_bucket_name",
         "GPU_SERVER_BASE_URL": "fastapi_gpu_server_base_url",
+        "IMAGE_MODE": "fastapi_image_mode",
         "LOCAL_IMG_PATH": "fastapi_local_img_path",
         "MODEL_NAME": "fastapi_model_name",
         "REDIS_CACHE_TTL": "fastapi_redis_cache_ttl",
