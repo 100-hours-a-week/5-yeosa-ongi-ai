@@ -74,7 +74,7 @@ steps:
         echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
         gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
           --network=dev-ongi-vpc \
-          --subnet=dev-ongi-server-subnet \
+          --subnet=dev-ongi-private-subnet \
           --machine-type=e2-standard-4 \
           --region=asia-northeast3 \
           --boot-disk-size=35GB \
@@ -87,13 +87,13 @@ steps:
           --scopes=https://www.googleapis.com/auth/cloud-platform \
           --tags=dev-ai
 
-        echo ▶ 기존 인스턴스 dev-ai-cicd 존재할 경우 삭제
-        if gcloud compute instances describe dev-ai-cicd --zone=asia-northeast3-a > /dev/null 2>&1; then
-          echo ▶ dev-ai-cicd 인스턴스가 존재하므로 삭제합니다
-          gcloud compute instances delete dev-ai-cicd --zone=asia-northeast3-a --quiet
+        echo ▶ 기존 인스턴스 dev-vm-ai-cpu 존재할 경우 삭제
+        if gcloud compute instances describe dev-vm-ai-cpu --zone=asia-northeast3-a > /dev/null 2>&1; then
+          echo ▶ dev-vm-ai-cpu 인스턴스가 존재하므로 삭제합니다
+          gcloud compute instances delete dev-vm-ai-cpu --zone=asia-northeast3-a --quiet
         fi
 
         echo ▶ 새 인스턴스 생성
-        gcloud compute instances create dev-ai-cicd \
+        gcloud compute instances create dev-vm-ai-cpu \
           --zone=asia-northeast3-a \
           --source-instance-template=${_TEMPLATE_NAME}
