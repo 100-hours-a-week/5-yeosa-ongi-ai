@@ -78,8 +78,8 @@ steps:
           --machine-type=e2-standard-4 \
           --region=asia-northeast3 \
           --boot-disk-size=35GB \
-          --image-family=cos-stable \
-          --image-project=cos-cloud \
+          --image-family=ubuntu-2204-lts \
+          --image-project=ubuntu-os-cloud \
           --container-image="asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:${_IMAGE_TAG}" \
           --container-env=PROJECT_ID=$$PROJECT_ID \
           --metadata="ssh-keys=$$SSH_KEYS" \
