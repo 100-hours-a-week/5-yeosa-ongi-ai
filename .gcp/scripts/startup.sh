@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+export IMAGE_TAG=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/IMAGE_TAG)
+export PROJECT_ID=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/PROJECT_ID)
+
+echo "[INFO] IMAGE_TAG=${IMAGE_TAG}"
+echo "[INFO] PROJECT_ID=${PROJECT_ID}"
+
 echo "Docker 설치"
 apt-get update
 apt-get install -y docker.io
