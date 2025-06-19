@@ -80,9 +80,7 @@ steps:
           --boot-disk-size=50GB \
           --image-family=ubuntu-2204-lts \
           --image-project=ubuntu-os-cloud \
-          --container-image="asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:${_IMAGE_TAG}" \
-          --container-env=PROJECT_ID=$$PROJECT_ID \
-          --metadata="ssh-keys=$$SSH_KEYS" \
+          --metadata="ssh-keys=$$SSH_KEYS,IMAGE_TAG=${_IMAGE_TAG},PROJECT_ID=$$PROJECT_ID" \
           --metadata-from-file=startup-script=.gcp/scripts/startup.sh \
           --service-account=github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com \
           --scopes=https://www.googleapis.com/auth/cloud-platform \
