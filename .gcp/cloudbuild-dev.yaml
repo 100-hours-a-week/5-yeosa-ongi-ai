@@ -72,7 +72,7 @@ steps:
         set -e
 
         echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
-        gcloud compute instance-templates create-with-container "${_TEMPLATE_NAME}" \
+        gcloud compute instance-templates create "${_TEMPLATE_NAME}" \
           --network=dev-ongi-vpc \
           --subnet=dev-ongi-private-subnet \
           --machine-type=e2-standard-4 \
