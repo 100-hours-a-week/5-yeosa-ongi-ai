@@ -28,5 +28,6 @@ data/lfw_funneled
 
 ongi-test-4247101f2463.json
 .env
+.env.*
 
 kafka/

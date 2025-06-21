@@ -6,5 +6,6 @@ __pycache__/
 images/
 .venv
 .env
+.env.*
 .vscode/settings.json
 **/insight-face-v3.pt
