@@ -23,17 +23,6 @@ docker run -d \
   --restart unless-stopped \
   prom/node-exporter
 
-echo "gcloud CLI 설치"
-apt-get install -y apt-transport-https ca-certificates gnupg curl
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" \
-  | tee /etc/apt/sources.list.d/google-cloud-sdk.list
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-  | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-apt-get update && apt-get install -y google-cloud-sdk
-
-echo "GCP Artifact Registry 인증"
-gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
-
 echo "ai-cpu 이미지 Pull"
 docker pull asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:${IMAGE_TAG}
 
