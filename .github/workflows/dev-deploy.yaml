@@ -18,6 +18,9 @@ jobs:
         with:
           ref: dev
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1 
+
       - name: Set up Python 3.10.17
         uses: actions/setup-python@v5
         with:
@@ -37,12 +40,14 @@ jobs:
         run: |
           gcloud auth configure-docker asia-northeast3-docker.pkg.dev --quiet
 
-      - name: Build Docker Image
-        env:
-          TAG: dev-${{ github.sha }}
-        run: |
-          docker build -t asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:$TAG .
-          docker push asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:$TAG
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-cpu:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
 
   deploy-cloudbuild:
     needs: build-docker
