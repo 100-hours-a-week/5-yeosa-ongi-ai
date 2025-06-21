@@ -8,11 +8,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+COPY gunicorn.conf.py .
+
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 COPY app/ app/
-COPY gunicorn.conf.py .
 
 ENV PYTHONPATH=/app
 
