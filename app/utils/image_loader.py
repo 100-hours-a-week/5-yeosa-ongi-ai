@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from botocore.config import Config
 from gcloud.aio.storage import Storage
 
-from app.config.settings import ImageMode, APP_ENV, AppEnv
+from app.config.settings import ImageMode
 
 load_dotenv()
 
@@ -254,26 +254,14 @@ class S3ImageLoader(BaseImageLoader):
 
         """
         #start = time.time()
-        if APP_ENV == AppEnv.PROD:
-            try:
-                response = requests.get(file_ref, timeout=5)
-                response.raise_for_status()
-                image_bytes = response.content
-                #end = time.time()
-                #print(f" S3 (URL 직접) 다운로드 시간 : {end - start}")
-                return image_bytes
-            except requests.RequestException as e:
-                print(f" S3 URL 요청 실패: {file_ref}, 오류: {e}")
-                raise
-        else:
-            # 이미지명(key) 기반 로딩
-            response = await self.client.get_object(
-                Bucket=self.bucket_name, Key=file_ref
-            )
-            image_bytes = await response["Body"].read()
-            #end = time.time()
-            #print(f" S3 다운로드 시간 : {end - start}")
-            return image_bytes
+        # 이미지명(key) 기반 로딩
+        response = await self.client.get_object(
+            Bucket=self.bucket_name, Key=file_ref
+        )
+        image_bytes = await response["Body"].read()
+        #end = time.time()
+        #print(f" S3 다운로드 시간 : {end - start}")
+        return image_bytes
     
     async def _process_single_file(self, filename: str, scale: list[str] = 'RGB') -> np.ndarray:
         loop = asyncio.get_running_loop()
