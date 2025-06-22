@@ -86,7 +86,7 @@ steps:
         echo ▶ 기존 인스턴스 prod-vm-ai 존재할 경우 삭제
         if gcloud compute instances describe prod-vm-ai --zone=asia-northeast3-c > /dev/null 2>&1; then
           echo ▶ prod-vm-ai 인스턴스가 존재하므로 삭제합니다
-          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-a --quiet
+          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-c --quiet
         fi
 
         echo ▶ 새 인스턴스 생성
