@@ -42,7 +42,7 @@ docker pull asia-northeast3-docker.pkg.dev/dev-ongi-3-tier/dev-ongi-ai-repo/ai-c
 echo "FastAPI 앱 컨테이너 실행"
 docker run -d \
   --name ai-cpu \
-  -e APP_ENV="$APP_ENV" \  
+  -e APP_ENV="$APP_ENV" \
   -e PROJECT_ID="$PROJECT_ID" \
   -p 8000:8000 \
   --restart unless-stopped \
