@@ -75,8 +75,10 @@ jobs:
         run: |
           if [[ "${{ github.base_ref }}" == "main" ]]; then
             echo "env=prod" >> $GITHUB_OUTPUT
+            echo "ENV is set to prod"
           else
             echo "env=dev" >> $GITHUB_OUTPUT
+            echo "ENV is set to dev"
           fi
 
       - name: Trigger Cloud Build
