@@ -84,13 +84,13 @@ steps:
           --tags=prod-ai
 
         echo ▶ 기존 인스턴스 prod-vm-ai 존재할 경우 삭제
-        if gcloud compute instances describe prod-vm-ai --zone=asia-northeast3-a > /dev/null 2>&1; then
+        if gcloud compute instances describe prod-vm-ai --zone=asia-northeast3-c > /dev/null 2>&1; then
           echo ▶ prod-vm-ai 인스턴스가 존재하므로 삭제합니다
-          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-a --quiet
+          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-c --quiet
         fi
 
         echo ▶ 새 인스턴스 생성
         gcloud compute instances create prod-vm-ai \
-          --zone=asia-northeast3-a \
+          --zone=asia-northeast3-c \
           --source-instance-template=${_TEMPLATE_NAME} \
           --network-interface "subnet=prod-ongi-server-subnet,private-network-ip=10.0.20.24,no-address"
