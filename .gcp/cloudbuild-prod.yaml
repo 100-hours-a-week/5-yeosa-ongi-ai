@@ -1,7 +1,6 @@
 substitutions:
   _IMAGE_TAG: ""
   _TEMPLATE_NAME: ""
-  _APP_ENV: ""
 
 serviceAccount: projects/dev-ongi-3-tier/serviceAccounts/github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com
 options:
@@ -36,11 +35,11 @@ availableSecrets:
       env: REDIS_PORT
     - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_project_id/versions/latest"
       env: PROJECT_ID
-    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_s3_bucket_name_dev/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_s3_bucket_name_prod/versions/latest"
       env: S3_BUCKET_NAME
-    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_host_dev/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_host_prod/versions/latest"
       env: REDIS_HOST
-    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gpu_server_base_url_dev/versions/latest"
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gpu_server_base_url_prod/versions/latest"
       env: GPU_SERVER_BASE_URL
 
 steps:
@@ -71,8 +70,8 @@ steps:
 
         echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
         gcloud compute instance-templates create "${_TEMPLATE_NAME}" \
-          --network=dev-ongi-vpc \
-          --subnet=dev-ongi-private-subnet \
+          --network=prod-ongi-vpc \
+          --subnet=prod-ongi-server-subnet \
           --machine-type=e2-standard-4 \
           --region=asia-northeast3 \
           --boot-disk-size=50GB \
@@ -82,16 +81,16 @@ steps:
           --metadata-from-file=startup-script=.gcp/scripts/startup.sh \
           --service-account=github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com \
           --scopes=https://www.googleapis.com/auth/cloud-platform \
-          --tags=dev-ai
+          --tags=prod-ai
 
-        echo ▶ 기존 인스턴스 dev-vm-ai-cpu 존재할 경우 삭제
-        if gcloud compute instances describe dev-vm-ai-cpu --zone=asia-northeast3-a > /dev/null 2>&1; then
-          echo ▶ dev-vm-ai-cpu 인스턴스가 존재하므로 삭제합니다
-          gcloud compute instances delete dev-vm-ai-cpu --zone=asia-northeast3-a --quiet
+        echo ▶ 기존 인스턴스 prod-vm-ai 존재할 경우 삭제
+        if gcloud compute instances describe prod-vm-ai --zone=asia-northeast3-a > /dev/null 2>&1; then
+          echo ▶ prod-vm-ai 인스턴스가 존재하므로 삭제합니다
+          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-a --quiet
         fi
 
         echo ▶ 새 인스턴스 생성
-        gcloud compute instances create dev-vm-ai-cpu \
+        gcloud compute instances create prod-vm-ai \
           --zone=asia-northeast3-a \
           --source-instance-template=${_TEMPLATE_NAME} \
-          --network-interface "subnet=dev-ongi-private-subnet,private-network-ip=10.1.20.4,no-address"
+          --network-interface "subnet=prod-ongi-server-subnet,private-network-ip=10.0.20.24,no-address"

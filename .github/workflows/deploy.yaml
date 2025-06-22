@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - dev
+      - main
     types:
       - closed
 
@@ -54,10 +55,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout dev branch
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: ${{ github.base_ref }}
         
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -69,26 +70,37 @@ jobs:
         with:
           project_id: dev-ongi-3-tier
 
+      - name: Set APP_ENV
+        id: set-env
+        run: |
+          if [[ "${{ github.base_ref }}" == "main" ]]; then
+            echo "env=prod" >> $GITHUB_OUTPUT
+          else
+            echo "env=dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Trigger Cloud Build
         run: |
           gcloud builds submit . \
-            --config=${{ github.workspace }}/.gcp/cloudbuild-dev.yaml \
-            --substitutions=_IMAGE_TAG=dev-${{ github.sha }},_TEMPLATE_NAME=ongi-ai-dev-${{ github.run_number }}-$(date +%H%M%S) \
+            --config=${{ github.workspace }}/.gcp/cloudbuild-${{ steps.set-env.outputs.env }}.yaml \
+            --substitutions=_APP_ENV=${{ steps.set-env.outputs.env }},_IMAGE_TAG=${{ github.sha }},_TEMPLATE_NAME=ongi-ai-${{ steps.set-env.outputs.env }}-${{ github.run_number }}-$(date +%H%M%S) \
             --service-account=projects/dev-ongi-3-tier/serviceAccounts/github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com
 
 
       - name: Notify Discord on Success
         if: success()
         env:
-          TAG: dev-${{ github.sha }}
+          TAG: ${{ github.sha }}
+          ENV: ${{ steps.set-env.outputs.env }}
         run: |
           echo '{
-            "content": "🎀🍰 딸기 알림이 왔어요! 🍰🎀\n안녕~ 나는 감・딸・기! 🍓\nPR 머지가 달콤하게 끝났고,\n도커 이미지 빌드에 이어 Cloud Build 트리거까지 완.벽.성.공! 💖\n\n✨ 새로운 버전이 오븐에서 방금 나왔답니다~\n\n다음 디저트를 준비할 시간이에요~! 🍮🌈",
+            "content": "🎀🍰 딸기 알림이 왔어요! 🍰🎀\n안녕~ 나는 감・딸・기! 🍓\n`${ENV}` 환경에서 PR 머지와 배포가 완료되었습니다! 💖",
             "embeds": [
               {
                 "title": "🍓 PR: \"${{ github.event.pull_request.title }}\"",
                 "url": "${{ github.event.pull_request.html_url }}",
                 "fields": [
+                  { "name": "Environment", "value": "${ENV}", "inline": true },
                   { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
                   { "name": "Author", "value": "${{ github.actor }}", "inline": true },
                   { "name": "Image Tag", "value": "${{ env.TAG }}", "inline": true }
@@ -100,14 +112,17 @@ jobs:
 
       - name: Notify Discord on Failure
         if: failure()
+        env:
+          ENV: ${{ steps.set-env.outputs.env }}
         run: |
           echo '{
-            "content": "💔🍓 딸기 알림이 왔어요... 🍓💔\n흑흑... 나는 감・딸・기... 😭\n이번 PR 머지는 달콤했는데, 이미지 빌드나 Cloud Build 트리거 중에\n문제가 생겨서 디저트를 완성하지 못했어요... 🍰💥\n\n지금 바로 확인해 주세요~ 도와줘요 파티시에님! 🧁🆘",
+            "content": "💔🍓 딸기 알림이 왔어요... 🍓💔\n흑흑... 나는 감・딸・기... 😭\n`${ENV}` 환경에서 빌드 또는 배포에 실패했어요!\n\n지금 바로 확인해 주세요~ 도와줘요 파티시에님! 🧁🆘",
             "embeds": [
               {
                 "title": "🍓 PR: \"${{ github.event.pull_request.title }}\"",
                 "url": "${{ github.event.pull_request.html_url }}",
                 "fields": [
+                  { "name": "Environment", "value": "${ENV}", "inline": true },
                   { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
                   { "name": "Author", "value": "${{ github.actor }}", "inline": true }
                 ],
