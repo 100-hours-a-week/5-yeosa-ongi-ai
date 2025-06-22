@@ -50,15 +50,19 @@ async def highlight_scoring_controller(req: CategoryScoreRequest, request: Reque
     loop = request.app.state.loop
     
     # 2. 이미지 임베딩 로드
-    logger.debug("이미지 임베딩 로드 시작")
-    embed_load_func = partial(
-        get_cached_embeddings_parallel,
-        all_images,
-    )
-    image_features, missing_keys = await loop.run_in_executor(
-        None,
-        embed_load_func,
-    )
+    # logger.debug("이미지 임베딩 로드 시작")
+    # embed_load_func = partial(
+    #     get_cached_embeddings_parallel,
+    #     all_images,
+    # )
+    # image_features, missing_keys = await loop.run_in_executor(
+    #     None,
+    #     embed_load_func,
+    # )
+    print("categorize_controller 임베딩 로드 전")
+    image_features, missing_keys = await get_cached_embeddings_parallel(all_images)
+    print("categorize_controller 임베딩 로드 후")
+
 
     # 3. 임베딩이 없는 이미지 처리
     if missing_keys:

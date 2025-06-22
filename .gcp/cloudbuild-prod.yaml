@@ -1,0 +1,96 @@
+substitutions:
+  _IMAGE_TAG: ""
+  _TEMPLATE_NAME: ""
+
+serviceAccount: projects/dev-ongi-3-tier/serviceAccounts/github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
+availableSecrets:
+  secretManager:
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_ssh_keys/versions/latest"
+      env: SSH_KEYS
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_access_key/versions/latest"
+      env: AWS_ACCESS_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_region/versions/latest"
+      env: AWS_REGION
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_aws_secret_key/versions/latest"
+      env: AWS_SECRET_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gcp_key/versions/latest"
+      env: GCP_KEY
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gcs_bucket_name/versions/latest"
+      env: GCS_BUCKET_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_local_img_path/versions/latest"
+      env: LOCAL_IMG_PATH
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_model_name/versions/latest"
+      env: MODEL_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_image_mode/versions/latest"
+      env: IMAGE_MODE
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_cache_ttl/versions/latest"
+      env: REDIS_CACHE_TTL
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_db/versions/latest"
+      env: REDIS_DB
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_port/versions/latest"
+      env: REDIS_PORT
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_project_id/versions/latest"
+      env: PROJECT_ID
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_s3_bucket_name_prod/versions/latest"
+      env: S3_BUCKET_NAME
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_redis_host_prod/versions/latest"
+      env: REDIS_HOST
+    - versionName: "projects/dev-ongi-3-tier/secrets/fastapi_gpu_server_base_url_prod/versions/latest"
+      env: GPU_SERVER_BASE_URL
+
+steps:
+  - id: deploy-fastapi
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    secretEnv:
+      - SSH_KEYS
+      - AWS_ACCESS_KEY
+      - AWS_REGION
+      - AWS_SECRET_KEY
+      - GCP_KEY
+      - GCS_BUCKET_NAME
+      - LOCAL_IMG_PATH
+      - MODEL_NAME
+      - IMAGE_MODE
+      - REDIS_CACHE_TTL
+      - REDIS_DB
+      - REDIS_PORT
+      - PROJECT_ID
+      - REDIS_HOST
+      - S3_BUCKET_NAME
+      - GPU_SERVER_BASE_URL
+    args:
+      - '-c'
+      - |
+        set -e
+
+        echo ▶ 템플릿 생성: ${_TEMPLATE_NAME}
+        gcloud compute instance-templates create "${_TEMPLATE_NAME}" \
+          --network=prod-ongi-vpc \
+          --subnet=prod-ongi-server-subnet \
+          --machine-type=e2-standard-4 \
+          --region=asia-northeast3 \
+          --boot-disk-size=50GB \
+          --image-family=ubuntu-2204-lts \
+          --image-project=ubuntu-os-cloud \
+          --metadata="ssh-keys=$$SSH_KEYS,APP_ENV=${_APP_ENV},IMAGE_TAG=${_IMAGE_TAG},PROJECT_ID=$$PROJECT_ID" \
+          --metadata-from-file=startup-script=.gcp/scripts/startup.sh \
+          --service-account=github-ai-cd-builder@dev-ongi-3-tier.iam.gserviceaccount.com \
+          --scopes=https://www.googleapis.com/auth/cloud-platform \
+          --tags=prod-ai
+
+        echo ▶ 기존 인스턴스 prod-vm-ai 존재할 경우 삭제
+        if gcloud compute instances describe prod-vm-ai --zone=asia-northeast3-a > /dev/null 2>&1; then
+          echo ▶ prod-vm-ai 인스턴스가 존재하므로 삭제합니다
+          gcloud compute instances delete prod-vm-ai --zone=asia-northeast3-a --quiet
+        fi
+
+        echo ▶ 새 인스턴스 생성
+        gcloud compute instances create prod-vm-ai \
+          --zone=asia-northeast3-a \
+          --source-instance-template=${_TEMPLATE_NAME} \
+          --network-interface "subnet=prod-ongi-server-subnet,private-network-ip=10.0.20.24,no-address"
