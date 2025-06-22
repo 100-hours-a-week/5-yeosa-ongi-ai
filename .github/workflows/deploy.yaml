@@ -94,13 +94,13 @@ jobs:
           ENV: ${{ steps.set-env.outputs.env }}
         run: |
           echo '{
-            "content": "🎀🍰 딸기 알림이 왔어요! 🍰🎀\n안녕~ 나는 감・딸・기! 🍓\n`${ENV}` 환경에서 PR 머지와 배포가 완료되었습니다! 💖",
+            "content": "🎀🍰 딸기 알림이 왔어요! 🍰🎀\n안녕~ 나는 감・딸・기! 🍓\n'"${ENV}"' 환경에서 PR 머지와 배포가 완료되었습니다! 💖",
             "embeds": [
               {
                 "title": "🍓 PR: \"${{ github.event.pull_request.title }}\"",
                 "url": "${{ github.event.pull_request.html_url }}",
                 "fields": [
-                  { "name": "Environment", "value": "${ENV}", "inline": true },
+                  { "name": "Environment", "value": "${{env.ENV}}", "inline": true },
                   { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
                   { "name": "Author", "value": "${{ github.actor }}", "inline": true },
                   { "name": "Image Tag", "value": "${{ env.TAG }}", "inline": true }
@@ -116,13 +116,13 @@ jobs:
           ENV: ${{ steps.set-env.outputs.env }}
         run: |
           echo '{
-            "content": "💔🍓 딸기 알림이 왔어요... 🍓💔\n흑흑... 나는 감・딸・기... 😭\n`${ENV}` 환경에서 빌드 또는 배포에 실패했어요!\n\n지금 바로 확인해 주세요~ 도와줘요 파티시에님! 🧁🆘",
+            "content": "💔🍓 딸기 알림이 왔어요... 🍓💔\n흑흑... 나는 감・딸・기... 😭\n'"${ENV}"' 환경에서 빌드 또는 배포에 실패했어요!\n\n지금 바로 확인해 주세요~ 도와줘요 파티시에님! 🧁🆘",
             "embeds": [
               {
                 "title": "🍓 PR: \"${{ github.event.pull_request.title }}\"",
                 "url": "${{ github.event.pull_request.html_url }}",
                 "fields": [
-                  { "name": "Environment", "value": "${ENV}", "inline": true },
+                  { "name": "Environment", "value": "${{env.ENV}}", "inline": true },
                   { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
                   { "name": "Author", "value": "${{ github.actor }}", "inline": true }
                 ],
