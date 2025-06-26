@@ -100,8 +100,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 torch.set_num_threads(1)
 
-Instrumentator().instrument(app).expose(app)
-
 setup_exception_handler(app)
 
 app.include_router(api_router)
+
+Instrumentator().instrument(app).expose(app)
