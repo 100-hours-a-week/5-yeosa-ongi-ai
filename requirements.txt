@@ -81,3 +81,6 @@ setuptools==79.0.1
 
 # --- CI/CD ---
 google-cloud-secret-manager==2.24.0
+
+# --- Monitoring ---
+prometheus_fastapi_instrumentator

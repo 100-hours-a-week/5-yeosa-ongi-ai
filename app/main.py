@@ -17,6 +17,7 @@ os.environ["JOBLIB_NUM_THREADS"] = "1"
 import torch
 from fastapi import FastAPI
 from aiokafka.errors import KafkaConnectionError
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config.secret_loader import load_secrets_from_gcp
 # load_secrets_from_gcp()
@@ -25,14 +26,7 @@ from app.api import api_router
 from app.kafka.consumer import create_kafka_consumer, consume_loop
 from app.kafka.producer import create_kafka_producer
 from app.config.app_config import get_config
-from app.config.settings import IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH, CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME
 from app.middleware.error_handler import setup_exception_handler
-from app.model.aesthetic_regressor import load_aesthetic_regressor
-from app.utils.image_loader import (
-    get_image_loader,
-    GCSImageLoader,
-    S3ImageLoader,
-)
 
 MAX_WORKERS = 8
 
@@ -81,6 +75,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 torch.set_num_threads(1)
+
+Instrumentator().instrument(app).expose(app)
 
 setup_exception_handler(app)
 
