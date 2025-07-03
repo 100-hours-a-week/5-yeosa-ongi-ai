@@ -1,12 +1,10 @@
 import logging
-from functools import partial
 from typing import Dict, List, Literal, Tuple
 
 import torch
 import torch.nn.functional as F
 import cv2
 import numpy as np
-from fastapi.responses import JSONResponse
 
 from app.core.cache import get_cached_embeddings_parallel
 from app.utils.logging_decorator import log_exception, log_flow
@@ -177,7 +175,7 @@ async def get_clip_low_quality_images(
     image_refs: List[str],
     text_features: torch.Tensor,
     fields: List[str],
-) -> List[str]:
+) -> Tuple[List[str], List[str]]:
     """
     'both'가 아닌 모든 결과를 저품질로 간주하고 해당 이미지 이름을 반환합니다.
 
@@ -187,7 +185,7 @@ async def get_clip_low_quality_images(
         fields: 필드 이름 리스트
 
     Returns:
-        List[str]: 저품질 이미지 이름 리스트
+        Tuple[List[str], List[str]]: 저품질 이미지 이름 리스트, 임베딩이 필요한 키 리스트
 
     """
     logger.info(
