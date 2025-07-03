@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import (
+from app.api.routers import (
     album_category_router,
     album_duplicate_router,
     album_embedding_router,
