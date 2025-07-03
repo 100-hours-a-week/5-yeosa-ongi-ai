@@ -20,7 +20,7 @@ LOCAL_IMG_PATH_raw = os.getenv("LOCAL_IMG_PATH")
 
 # GCS
 GCS_BUCKET_NAME_raw = os.getenv("GCS_BUCKET_NAME")
-GCP_KEY_raw = os.getenv("GCP_KEY")
+GCP_KEY_raw = os.getenv("GCP_KEY_PATH")
 
 # S3
 S3_BUCKET_NAME_raw = os.getenv("S3_BUCKET_NAME")
@@ -32,12 +32,11 @@ AWS_REGION_raw = os.getenv("AWS_REGION")
 # local
 if LOCAL_IMG_PATH_raw is None:
     raise EnvironmentError("LOCAL_IMG_PATH은 .env에 설정되어야 합니다.")
-
-# GCS
-if GCS_BUCKET_NAME_raw is None:
-    raise EnvironmentError("BUCKET_NAME은 .env에 설정되어야 합니다.")
-if GCP_KEY_raw is None:
-    raise EnvironmentError("GCP_KEY_PATH은 .env에 설정되어야 합니다.")
+# # GCS
+# if GCS_BUCKET_NAME_raw is None:
+#     raise EnvironmentError("BUCKET_NAME은 .env에 설정되어야 합니다.")
+# if GCP_KEY_raw is None:
+#     raise EnvironmentError("GCP_KEY_PATH은 .env에 설정되어야 합니다.")
 
 # S3
 if S3_BUCKET_NAME_raw is None:
@@ -50,8 +49,11 @@ if AWS_REGION_raw is None:
 # 타입이 str로 확정됨 (mypy 추론 가능)
 LOCAL_IMG_PATH: str = LOCAL_IMG_PATH_raw
 
-GCS_BUCKET_NAME: str = GCS_BUCKET_NAME_raw
-GCP_KEY: str = GCP_KEY_raw
+# GCS
+if GCS_BUCKET_NAME_raw:
+    GCS_BUCKET_NAME: str = GCS_BUCKET_NAME_raw
+if GCP_KEY_raw:
+    GCP_KEY: str = GCP_KEY_raw
 
 S3_BUCKET_NAME: str = S3_BUCKET_NAME_raw
 AWS_ACCESS_KEY_ID: str = AWS_ACCESS_KEY_ID_raw
@@ -60,17 +62,12 @@ AWS_REGION: str = AWS_REGION_raw
 
 # 공통 디코더
 def decode_image_cv2(image_bytes: bytes, label: str, scale: str = 'RGB') -> np.ndarray:
-    #start = time.time()
     nparr = np.frombuffer(image_bytes, np.uint8)
     flags = cv2.IMREAD_GRAYSCALE if scale == 'GRAY' else cv2.IMREAD_COLOR
     img = cv2.imdecode(nparr, flags)
-    #end = time.time()
-    #start2 = time.time()
     if scale == 'RGB':
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    #end2 = time.time()
-    #print(f"디코딩 시간({label}): {end - start:.6f}초")
-    #print(f"색상공간 변환 시간({label}): {end2 - start2:.6f}초")
+
     return img
 
 class BaseImageLoader(ABC):
@@ -146,10 +143,13 @@ class GCSImageLoader(BaseImageLoader):
             key_path (str): 서비스 계정 키 경로 (.json)
 
         """
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp:
-            tmp.write(gcp_key)
-            self._temp_key_path = tmp.name
-        self.client = Storage(service_file=self._temp_key_path)
+        if GCP_KEY_raw:
+            self.client = Storage(service_file=GCP_KEY_raw)
+        else:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp:
+                tmp.write(gcp_key)
+                self._temp_key_path = tmp.name
+            self.client = Storage(service_file=self._temp_key_path)
         self.bucket_name = bucket_name
 
     async def _download(self, file_name: str) -> bytes:
@@ -163,13 +163,9 @@ class GCSImageLoader(BaseImageLoader):
             bytes: 로드된 이미지 바이트
 
         """
-        #start = time.time()
         image_bytes = await self.client.download(
             bucket=self.bucket_name, object_name=file_name
         )
-        # image_bytes = await blob.download_as_bytes(client=self.client)
-        #end = time.time()
-        #print(f" GCS 다운로드 시간 : {end - start}")
         return image_bytes
 
     async def _process_single_file(
@@ -197,8 +193,6 @@ class GCSImageLoader(BaseImageLoader):
         tasks = [self._process_single_file(f, None, scale) for f in filenames]
 
         result = await asyncio.gather(*tasks)
-        #end = time.time()
-        #print(f"전체 시간(gcs): {end - start:.6f}초")
         return result
 
 class S3ImageLoader(BaseImageLoader):
@@ -253,14 +247,11 @@ class S3ImageLoader(BaseImageLoader):
             bytes: 로드된 이미지 바이트
 
         """
-        #start = time.time()
-        # 이미지명(key) 기반 로딩
         response = await self.client.get_object(
             Bucket=self.bucket_name, Key=file_ref
         )
         image_bytes = await response["Body"].read()
-        #end = time.time()
-        #print(f" S3 다운로드 시간 : {end - start}")
+
         return image_bytes
     
     async def _process_single_file(self, filename: str, scale: list[str] = 'RGB') -> np.ndarray:
@@ -282,11 +273,8 @@ class S3ImageLoader(BaseImageLoader):
             list[np.ndarray]: 로드된 이미지 바이트 리스트
 
         """
-        #start = time.time()
         tasks = [self._process_single_file(f, scale) for f in filenames]
         result = await asyncio.gather(*tasks)
-        #end = time.time()
-        #print(f"전체 시간(s3): {end - start:.6f}초")
         return result
 
 
