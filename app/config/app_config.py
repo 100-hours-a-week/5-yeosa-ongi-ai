@@ -1,3 +1,5 @@
+# app/config/app_config.py
+
 import os
 import asyncio
 import httpx
@@ -11,7 +13,9 @@ from app.config.settings import (
     IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH,
     CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME,
 )
-from app.config.kafka_config import KAFKA_BROKER_URL, KAFKA_GROUP_ID
+from app.config.kafka_config import (
+    KAFKA_GROUP_ID, KAFKA_GPU_GROUP_ID
+)
 from app.model.aesthetic_regressor import load_aesthetic_regressor
 from app.utils.image_loader import get_image_loader, S3ImageLoader, GCSImageLoader
 
@@ -32,10 +36,11 @@ class AppConfig:
         self.redis_semaphore = None
         self.gpu_client: Optional[httpx.AsyncClient] = None
         self.kafka_bootstrap_servers: Optional[str] = None
-        self.kafka_group_id: Optional[str] = None
-        
+        self.kafka_tasks: list[asyncio.Task] = []
 
     async def initialize(self):
+        from app.kafka.consumer import run_kafka_consumer, GPU_TOPICS, GENERAL_TOPICS
+
         self.loop = asyncio.get_running_loop()
         self.executor = ThreadPoolExecutor(max_workers=8)
         self.loop.set_default_executor(self.executor)
@@ -87,14 +92,20 @@ class AppConfig:
             timeout=60.0,
             headers={"Content-Type": "application/json"},
         )
-        self.kafka_bootstrap_servers = KAFKA_BROKER_URL
-        self.kafka_group_id = KAFKA_GROUP_ID
-        if not self.kafka_bootstrap_servers:
-            raise ValueError("kafka bootstrap_servers 설정이 없습니다.")
-        if not self.kafka_group_id:
-            raise ValueError("kafka_group_id 설정이 없습니다.")
+
+        # Kafka 컨슈머 루프 등록 (두 그룹 모두 실행)
+        general_task = asyncio.create_task(run_kafka_consumer(GENERAL_TOPICS, KAFKA_GROUP_ID))
+        gpu_task = asyncio.create_task(run_kafka_consumer(GPU_TOPICS, KAFKA_GPU_GROUP_ID))
+        self.kafka_tasks.extend([general_task, gpu_task])
 
     async def cleanup(self):
+        for task in self.kafka_tasks:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                print("Kafka consumer task cancelled cleanly.")
+                
         if IMAGE_MODE == IMAGE_MODE.GCS and isinstance(self.image_loader, GCSImageLoader):
             await self.image_loader.client.close()
             temp_path = getattr(self.image_loader, "_temp_file_path", None)
