@@ -1,110 +1,76 @@
-import json
 import asyncio
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-
-# 핸들러 (처리 함수)
+from app.kafka.producer import create_kafka_producer
+from app.utils.kafka_utils import create_kafka_consumer, process_partition_batch
 from app.kafka.handler import (
     embedding as embedding_handler,
+    people as people_handler,
+    category as category_handler,
     duplicate as duplicate_handler,
     quality as quality_handler,
-    category as category_handler,
     score as score_handler,
-    people as people_handler,
 )
 
-# Pydantic 모델
 from app.schemas.kafka import (
     embedding as embedding_schema,
+    people as people_schema,
+    categories as categories_schema,
     duplicate as duplicate_schema,
     quality as quality_schema,
-    categories as categories_schema,
     score as score_schema,
-    people as people_schema,
 )
+from app.config.kafka_config import KAFKA_BROKER_URL
 
-from app.config.kafka_config import (
-    KAFKA_REQUEST_TOPICS, KAFKA_GROUP_ID, KAFKA_RESPONSE_TOPIC_MAP
-)
+GPU_TOPICS = [
+    "album.ai.embedding.request",
+    "album.ai.people.request",
+]
 
-TOPIC_MODEL_MAP = {
+GENERAL_TOPICS = [
+    "album.ai.category.request",
+    "album.ai.duplicate.request",
+    "album.ai.quality.request",
+    "album.ai.score.request",
+]
+
+MODEL_MAP = {
     "album.ai.embedding.request": embedding_schema.EmbeddingKafkaRequest,
-    "album.ai.category.request": categories_schema.CategoriesKafkaRequest,
     "album.ai.people.request": people_schema.PeopleKafkaRequest,
+    "album.ai.category.request": categories_schema.CategoriesKafkaRequest,
     "album.ai.duplicate.request": duplicate_schema.DuplicateKafkaRequest,
     "album.ai.quality.request": quality_schema.QualityKafkaRequest,
     "album.ai.score.request": score_schema.ScoreKafkaRequest,
 }
 
-ALL_HANDLERS = {
+HANDLER_MAP = {
     "album.ai.embedding.request": embedding_handler.handle,
-    "album.ai.category.request": category_handler.handle,
     "album.ai.people.request": people_handler.handle,
+    "album.ai.category.request": category_handler.handle,
     "album.ai.duplicate.request": duplicate_handler.handle,
     "album.ai.quality.request": quality_handler.handle,
     "album.ai.score.request": score_handler.handle,
 }
 
-def create_kafka_consumer(bootstrap_servers: str) -> AIOKafkaConsumer:
-    return AIOKafkaConsumer(
-        *KAFKA_REQUEST_TOPICS,
-        bootstrap_servers=bootstrap_servers,
-        group_id=KAFKA_GROUP_ID,
-        enable_auto_commit=False,
-        auto_offset_reset="earliest",
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        isolation_level="read_committed",
-        max_poll_records=100
-    )
+async def run_kafka_consumer(topics: list[str], group_id: str):
+    consumer = create_kafka_consumer(topics, group_id, KAFKA_BROKER_URL)
+    producer = create_kafka_producer(KAFKA_BROKER_URL)
 
+    await consumer.start()
+    await producer.start()
 
-async def process_partition_batch(tp, batch, producer: AIOKafkaProducer):
-    topic = tp.topic
-    handler = ALL_HANDLERS.get(topic)
-    model_cls = TOPIC_MODEL_MAP.get(topic)
-    if not handler or not model_cls:
-        print("핸들러 또는 모델 없음")
-        return
-
-    data_batch = [model_cls(**msg.value) for msg in batch]
-    keys = [msg.key.decode() if msg.key else None for msg in batch]
-    response_topic = KAFKA_RESPONSE_TOPIC_MAP[topic]
-
-    txn_started = False
+    print(f"[Kafka] 컨슈머, 프로듀서 연결 성공 - 컨슈머 그룹: {group_id}")
 
     try:
-        result_list = await handler(data_batch)
+        while True:
+            messages = await consumer.getmany(timeout_ms=200)
+            
+            if messages:
+                print(f"[Kafka] getmany 결과: {[(tp.topic, len(batch)) for tp, batch in messages.items()]}", flush=True)
 
-        await producer.begin_transaction()
-        txn_started = True
-
-        print("트랜잭션 시작")
-
-        for result, key in zip(result_list, keys):
-            await producer.send(
-                topic=response_topic,
-                key=key.encode() if key else None,
-                value=result.dict()
-            )
-            print(f"발행 완료: taskId={result.taskId}")
-
-        offsets = {tp: batch[-1].offset + 1}
-        await producer.send_offsets_to_transaction(offsets, KAFKA_GROUP_ID)
-        await producer.commit_transaction()
-
-    except Exception as e:
-        if txn_started:
-            await producer.abort_transaction()
-            print(f"❌ Transaction aborted: {e}")
-        else:
-            print(f"핸들러 처리 중 예외 발생 (트랜잭션 시작 전): {e}")
-
-async def consume_loop(consumer: AIOKafkaConsumer, producer: AIOKafkaProducer):
-    while True:
-        messages = await consumer.getmany(timeout_ms=200)
-
-        tasks = []
-        for tp, batch in messages.items():
-            if batch:
-                tasks.append(process_partition_batch(tp, batch, producer))
-
-        await asyncio.gather(*tasks)
+            tasks = [
+                process_partition_batch(tp, batch, producer, HANDLER_MAP, MODEL_MAP, group_id)
+                for tp, batch in messages.items() if batch
+            ]
+            await asyncio.gather(*tasks)
+    finally:
+        await consumer.stop()
+        await producer.stop()
