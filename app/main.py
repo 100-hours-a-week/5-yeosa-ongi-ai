@@ -16,7 +16,6 @@ os.environ["JOBLIB_NUM_THREADS"] = "1"
 
 import torch
 from fastapi import FastAPI
-# prometheus 주석처리
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config.secret_loader import load_secrets_from_gcp
