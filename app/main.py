@@ -16,15 +16,13 @@ os.environ["JOBLIB_NUM_THREADS"] = "1"
 
 import torch
 from fastapi import FastAPI
-from aiokafka.errors import KafkaConnectionError
+# prometheus 주석처리
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config.secret_loader import load_secrets_from_gcp
 # load_secrets_from_gcp()
 
 from app.api import api_router
-from app.kafka.consumer import create_kafka_consumer, consume_loop
-from app.kafka.producer import create_kafka_producer
 from app.config.app_config import get_config
 from app.middleware.error_handler import setup_exception_handler
 
@@ -40,37 +38,17 @@ async def lifespan(app: FastAPI):
     config = get_config()
     await config.initialize()
 
-    consumer = create_kafka_consumer(bootstrap_servers=config.kafka_bootstrap_servers)
-    producer = create_kafka_producer(bootstrap_servers=config.kafka_bootstrap_servers)
-
-    try:
-        await consumer.start()
-        print(f"kafka Consumer 연결 성공")
-    except KafkaConnectionError as e:
-        print(f"kafka Consumer 연결 실패: {e}")
-        
-    try:
-        await producer.start()
-        print(f"kafka Producer 연결 성공")
-    except KafkaConnectionError as e:
-        print(f"kafka Producer 연결 실패: {e}")
-
-
-    # Kafka 백그라운드 태스크 실행
-    kafka_consumer_task = asyncio.create_task(consume_loop(consumer, producer))
-
     try:
         yield
+    except Exception as e:
+        print(f"[lifespan] 예외 발생: {e}", flush=True)
+        raise
     finally:
-        """서버 종료 시, 리소스 해제 로직입니다."""
-        await config.cleanup()
-        await consumer.stop()
-        await producer.stop()
-        kafka_consumer_task.cancel()
         try:
-            await kafka_consumer_task
-        except asyncio.CancelledError:
-            pass
+            await config.cleanup()
+        except Exception as e:
+            print(f"[cleanup] 예외 발생: {e}", flush=True)
+
     
 
 app = FastAPI(lifespan=lifespan)
