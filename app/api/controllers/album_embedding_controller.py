@@ -30,8 +30,9 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
     """
 
     try:
+        print('[INFO] gpu_client 불러오기')
         gpu_client = request.app.state.gpu_client
-
+        print(f'[INFO] gpu_client 불러오기 성공! {gpu_client.base_url}')
         if req.images:
             first_image = req.images[0]
             print(f"[CHECK] GPU에 요청된 첫 번째 이미지 파일명: {first_image}")
@@ -42,7 +43,6 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
         send_time_str = now_str()
         t1 = time.time()
         print(f"[INFO] GPU 서버 전송 시작 시각: {send_time_str}")
-
         response = await gpu_client.post(
             "/clip/embedding",
             json=req.dict(),  # {"images": [...]}
