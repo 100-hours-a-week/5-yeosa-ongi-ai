@@ -30,9 +30,9 @@ async def embed_controller(req: ImageRequest, request: Request) -> Response:
     """
 
     try:
-        print('[INFO] gpu_client 불러오기')
+        logger.info('gpu_client 불러오기')
         gpu_client = request.app.state.gpu_client
-        print(f'[INFO] gpu_client 불러오기 성공! {gpu_client.base_url}')
+        logger.info(f'gpu_client 불러오기 성공! {gpu_client.base_url}')
         if req.images:
             first_image = req.images[0]
             print(f"[CHECK] GPU에 요청된 첫 번째 이미지 파일명: {first_image}")
