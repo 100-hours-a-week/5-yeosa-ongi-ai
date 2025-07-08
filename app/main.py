@@ -64,6 +64,7 @@ async def lifespan(app: FastAPI):
     app.state.quality_text_features = quality_text_features
     app.state.quality_fields = quality_fields
     app.state.redis = init_redis()
+    print(os.getenv('GPU_SERVER_BASE_URL'))
     app.state.gpu_client = httpx.AsyncClient(
         base_url=GPU_SERVER_BASE_URL,
         timeout=60.0,
