@@ -16,6 +16,7 @@ os.environ["JOBLIB_NUM_THREADS"] = "1"
 
 import torch
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config.secret_loader import load_secrets_from_gcp
 load_secrets_from_gcp()
@@ -102,3 +103,5 @@ torch.set_num_threads(1)
 setup_exception_handler(app)
 
 app.include_router(api_router)
+
+Instrumentator().instrument(app).expose(app)
