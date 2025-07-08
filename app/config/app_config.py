@@ -13,9 +13,7 @@ from app.config.settings import (
     IMAGE_MODE, MODEL_NAME, MODEL_BASE_PATH,
     CATEGORY_FEATURES_FILENAME, QUALITY_FEATURES_FILENAME,
 )
-from app.config.kafka_config import (
-    KAFKA_GROUP_ID, KAFKA_GPU_GROUP_ID
-)
+from app.config.kafka_config import KAFKA_GROUP_ID_MAP
 from app.model.aesthetic_regressor import load_aesthetic_regressor
 from app.utils.image_loader import get_image_loader, S3ImageLoader, GCSImageLoader
 
@@ -39,7 +37,7 @@ class AppConfig:
         self.kafka_tasks: list[asyncio.Task] = []
 
     async def initialize(self):
-        from app.kafka.consumer import run_kafka_consumer, GPU_TOPICS, GENERAL_TOPICS
+        from app.kafka.consumer import run_kafka_consumer, ALL_TOPICS
 
         self.loop = asyncio.get_running_loop()
         self.executor = ThreadPoolExecutor(max_workers=8)
@@ -94,9 +92,10 @@ class AppConfig:
         )
 
         # Kafka 컨슈머 루프 등록 (두 그룹 모두 실행)
-        general_task = asyncio.create_task(run_kafka_consumer(GENERAL_TOPICS, KAFKA_GROUP_ID))
-        gpu_task = asyncio.create_task(run_kafka_consumer(GPU_TOPICS, KAFKA_GPU_GROUP_ID))
-        self.kafka_tasks.extend([general_task, gpu_task])
+        for topic in ALL_TOPICS:
+            group_id = KAFKA_GROUP_ID_MAP[topic]
+            task = asyncio.create_task(run_kafka_consumer(topic, group_id))
+            self.kafka_tasks.append(task)
 
     async def cleanup(self):
         for task in self.kafka_tasks:
@@ -105,7 +104,7 @@ class AppConfig:
                 await task
             except asyncio.CancelledError:
                 print("Kafka consumer task cancelled cleanly.")
-                
+
         if IMAGE_MODE == IMAGE_MODE.GCS and isinstance(self.image_loader, GCSImageLoader):
             await self.image_loader.client.close()
             temp_path = getattr(self.image_loader, "_temp_file_path", None)
