@@ -20,16 +20,13 @@ from app.schemas.kafka import (
 )
 from app.config.kafka_config import KAFKA_BROKER_URL
 
-GPU_TOPICS = [
-    "album.ai.embedding.request",
-    "album.ai.people.request",
-]
-
-GENERAL_TOPICS = [
+ALL_TOPICS = [
     "album.ai.category.request",
     "album.ai.duplicate.request",
     "album.ai.quality.request",
     "album.ai.score.request",
+    "album.ai.embedding.request",
+    "album.ai.people.request",
 ]
 
 MODEL_MAP = {
@@ -50,8 +47,8 @@ HANDLER_MAP = {
     "album.ai.score.request": score_handler.handle,
 }
 
-async def run_kafka_consumer(topics: list[str], group_id: str):
-    consumer = create_kafka_consumer(topics, group_id, KAFKA_BROKER_URL)
+async def run_kafka_consumer(topic: str, group_id: str):
+    consumer = create_kafka_consumer([topic], group_id, KAFKA_BROKER_URL)
     producer = create_kafka_producer(KAFKA_BROKER_URL)
 
     await consumer.start()
