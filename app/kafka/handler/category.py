@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from app.service.category_pipeline import run_category_pipeline
 from app.schemas.models.categories import CategoriesResponse
 from app.schemas.kafka.categories import CategoriesKafkaRequest, CategoriesKafkaResponse
 from app.utils.status_message import get_message_by_status
@@ -10,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 async def handle(messages: List[CategoriesKafkaRequest]) -> List[CategoriesKafkaResponse]:
+    from app.service.category_pipeline import run_category_pipeline
     responses: List[CategoriesKafkaResponse] = []
 
     for msg in messages:
