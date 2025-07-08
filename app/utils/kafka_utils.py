@@ -31,6 +31,15 @@ async def process_partition_batch(tp, batch, producer, handler_map: dict, model_
     try:
         result_list = await handler(data_batch)
 
+        # 로깅
+        request_count = len(batch)
+        response_count = len(result_list)
+        print(f"[{topic}] ✅ 요청 메시지 수: {request_count}, 응답 메시지 수: {response_count}")
+
+        if request_count != response_count:
+            print(f"[{topic}] ⚠️ 요청과 응답 메시지 수가 다릅니다! (요청={request_count}, 응답={response_count})")
+
+
         await producer.begin_transaction()
         txn_started = True
 
