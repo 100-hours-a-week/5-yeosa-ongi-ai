@@ -1,6 +1,5 @@
 import logging
 
-from app.config.app_config import get_config
 from app.schemas.common.request import ImageRequest
 from app.schemas.models.people import PeopleResponse, PeopleMultiResponseData
 from app.utils.status_message import get_message_by_status
@@ -19,6 +18,7 @@ async def run_people_clustering_pipeline(req: ImageRequest) -> tuple[int, People
     Returns:
         Tuple[int, dict]: 상태 코드와 응답 본문
     """
+    from app.config.app_config import get_config
     try:
         config = get_config()
         gpu_client = config.gpu_client

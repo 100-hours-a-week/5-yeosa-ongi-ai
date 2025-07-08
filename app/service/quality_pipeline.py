@@ -4,7 +4,6 @@ import asyncio
 import logging
 from typing import Tuple
 
-from app.config.app_config import get_config
 from app.service.quality import get_clip_low_quality_images, get_laplacian_low_quality_images
 from app.schemas.common.request import ImageRequest
 from app.schemas.models.quality import QualityResponse, QualityMultiResponseData
@@ -22,6 +21,7 @@ async def run_quality_pipeline(req: ImageRequest) -> Tuple[int, QualityResponse]
         Tuple[int, QualityResponse]: (상태 코드, 응답 DTO)
     """
     try:
+        from app.config.app_config import get_config
         config = get_config()
         image_refs = req.images
         image_loader = config.image_loader

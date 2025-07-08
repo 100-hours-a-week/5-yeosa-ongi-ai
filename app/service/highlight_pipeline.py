@@ -3,7 +3,6 @@ from itertools import chain
 from functools import partial
 import logging
 
-from app.config.app_config import get_config
 from app.core.cache import get_cached_embeddings_parallel
 from app.service.highlight import score_each_category
 from app.schemas.common.request import CategoryScoreRequest
@@ -24,6 +23,7 @@ async def run_highlight_pipeline(req: CategoryScoreRequest) -> Tuple[int, ScoreR
         Tuple[int, ScoreResponse]: (HTTP 상태 코드, 응답 모델 객체)
     """
     try:
+        from app.config.app_config import get_config
         config = get_config()
         loop = config.loop
         categories = req.categories

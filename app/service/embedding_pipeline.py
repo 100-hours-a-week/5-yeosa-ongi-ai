@@ -4,8 +4,6 @@ from typing import Tuple
 
 from app.schemas.common.request import ImageRequest
 from app.schemas.models.embedding import EmbeddingResponse, EmbeddingMultiResponseData
-from app.core.cache import set_cached_embedding
-from app.config.app_config import get_config
 from app.utils.status_message import get_message_by_status
 
 logger = logging.getLogger(__name__)
@@ -21,6 +19,8 @@ async def run_embedding_pipeline(req: ImageRequest) -> Tuple[int, EmbeddingRespo
     Returns:
         Tuple[int, EmbeddingResponse]: 상태 코드와 응답 모델
     """
+    from app.config.app_config import get_config
+    from app.core.cache import set_cached_embedding
     try:
         config = get_config()
         gpu_client = config.gpu_client

@@ -2,7 +2,6 @@ import logging
 from functools import partial
 from typing import Tuple
 
-from app.config.app_config import get_config
 from app.schemas.common.request import ImageRequest
 from app.schemas.models.duplicate import DuplicateResponse, DuplicateMultiResponseData
 from app.service.duplicate import find_duplicate_groups
@@ -22,6 +21,7 @@ async def run_duplicate_pipeline(req: ImageRequest) -> Tuple[int, DuplicateRespo
         Tuple[int, DuplicateResponse]: 상태 코드와 Pydantic 응답 모델
     """
     try:
+        from app.config.app_config import get_config
         config = get_config()
         loop = config.loop
         image_refs = req.images
