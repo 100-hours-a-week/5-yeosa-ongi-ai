@@ -6,7 +6,7 @@ import asyncio
 from dotenv import load_dotenv
 
 import torch
-from app.config.app_config import get_config
+
 from app.config.redis import get_redis
 
 load_dotenv()
@@ -23,6 +23,7 @@ except Exception as e:
     raise EnvironmentError("REDIS_CACHE_TTL이 정수로 지정되어야 합니다.")
 
 async def get_cached_embedding(key: str) -> Any | None:
+    from app.config.app_config import get_config
     redis = get_redis()
     semaphore = get_config().redis_semaphore
 
@@ -42,6 +43,7 @@ async def get_cached_embedding(key: str) -> Any | None:
 
 
 async def set_cached_embedding(key: str, value: Any) -> None:
+    from app.config.app_config import get_config
     redis = get_redis()
     semaphore = get_config().redis_semaphore
 
@@ -62,6 +64,7 @@ async def set_cached_embedding(key: str, value: Any) -> None:
 
 
 async def del_embedding_cache(key: str) -> None:
+    from app.config.app_config import get_config
     redis = get_redis()
     semaphore = get_config().redis_semaphore
 
@@ -73,6 +76,7 @@ async def del_embedding_cache(key: str) -> None:
         logger.error(f"[Redis DEL ERROR] key='{key}' failed: {e}", exc_info=True)
 
 async def clear_embedding_cache() -> None:
+    from app.config.app_config import get_config
     redis = get_redis()
     semaphore = get_config().redis_semaphore
 
