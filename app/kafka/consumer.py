@@ -1,4 +1,5 @@
 import asyncio
+from loguru import logger
 from app.kafka.producer import create_kafka_producer
 from app.utils.kafka_utils import create_kafka_consumer, process_partition_batch
 from app.kafka.handler import (
@@ -54,14 +55,14 @@ async def run_kafka_consumer(topic: str, group_id: str):
     await consumer.start()
     await producer.start()
 
-    print(f"[Kafka] 컨슈머, 프로듀서 연결 성공 - 컨슈머 그룹: {group_id}")
+    logger.info(f"[Kafka] 컨슈머, 프로듀서 연결 성공 - 컨슈머 그룹: {group_id}")
 
     try:
         while True:
             messages = await consumer.getmany(timeout_ms=200)
             
             if messages:
-                print(f"[Kafka] getmany 결과: {[(tp.topic, len(batch)) for tp, batch in messages.items()]}", flush=True)
+                logger.debug(f"[Kafka] getmany 결과: {[(tp.topic, len(batch)) for tp, batch in messages.items()]}")
 
             tasks = [
                 process_partition_batch(tp, batch, producer, HANDLER_MAP, MODEL_MAP, group_id)
