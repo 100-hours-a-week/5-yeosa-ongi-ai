@@ -26,7 +26,14 @@ def load_secrets_from_gcp():
         "REDIS_PORT": "fastapi_redis_port",
         "S3_BUCKET_NAME": f"fastapi_s3_bucket_name_{app_env}",
         "GPU_SERVER_BASE_URL": f"fastapi_gpu_server_base_url_{app_env}",
-        "REDIS_HOST": f"fastapi_redis_host_{app_env}"
+        "REDIS_HOST": f"fastapi_redis_host_{app_env}",
+        "KAFKA_BROKER_URL": f"kafka_broker_url_{app_env}",
+        "KAFKA_GROUP_CATEGORY": "fastapi_kafka_group_category",
+        "KAFKA_GROUP_DUPLICATE": "fastapi_kafka_group_duplicate",
+        "KAFKA_GROUP_QUALITY": "fastapi_kafka_group_quality",
+        "KAFKA_GROUP_SCORE": "fastapi_kafka_group_score",
+        "KAFKA_GROUP_EMBEDDING": "fastapi_kafka_group_embedding",
+        "KAFKA_GROUP_PEOPLE": "fastapi_kafka_group_people"
     }
 
 

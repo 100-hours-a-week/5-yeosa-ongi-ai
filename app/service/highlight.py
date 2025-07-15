@@ -4,6 +4,7 @@ from typing import Dict, List, Any
 import torch
 
 from app.utils.logging_decorator import log_exception, log_flow
+from app.schemas.models.score import ScoreCategory, ScoreImage
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ def score_each_category(
     categories: List[Any],
     embedding_map: Dict[str, torch.Tensor],
     regressor: torch.nn.Module,
-) -> List[Dict[str, Any]]:
+) -> List[ScoreCategory]:
     """
     각 카테고리별로 이미지들의 하이라이트 점수를 계산합니다.
 
@@ -38,7 +39,7 @@ def score_each_category(
         extra={"total_categories": len(categories)},
     )
 
-    data = []
+    scored_categories: List[ScoreCategory] = []
     for category in categories:
         logger.debug(
             "카테고리 처리 중",
@@ -53,14 +54,20 @@ def score_each_category(
         scores = estimate_highlight_score(
             image_features, category.images, regressor
         )
-        data.append({"category": category.category, "images": scores})
+
+        scored_category = ScoreCategory(
+            category=category.category,
+            images=scores
+        )
+
+        scored_categories.append(scored_category)
 
     logger.info(
         "카테고리별 하이라이트 점수 계산 완료",
-        extra={"processed_categories": len(data)},
+        extra={"processed_categories": len(scored_categories)},
     )
 
-    return data
+    return scored_categories
 
 
 @log_flow
@@ -68,7 +75,7 @@ def estimate_highlight_score(
     image_features: torch.Tensor,
     image_names: List[str],
     aesthetic_regressor: torch.nn.Module,
-) -> List[Dict[str, float]]:
+) -> List[ScoreImage]:
     """
     이미지들의 하이라이트 점수를 예측합니다.
 
@@ -92,7 +99,7 @@ def estimate_highlight_score(
         scores = aesthetic_regressor(image_features)  # shape: [N]
 
     result = [
-        {"image": name, "score": score.item()}
+        ScoreImage(image=name, score=score.item())
         for name, score in zip(image_names, scores)
     ]
 
