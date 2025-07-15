@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field
 
-
-# /embedding, /duplicate, /quality, /people 등에서 공통 사용
 class ImageRequest(BaseModel):
     """
     이미지 파일명 목록을 전달하기 위한 요청 모델.
@@ -12,10 +10,8 @@ class ImageRequest(BaseModel):
     """
 
     images: list[str]
-    
-    
-# /categories 요청용
-class ImageConceptRequest(BaseModel):
+
+class ImageConceptRequest(ImageRequest):
     """
     카테고리를 분류할 이미지들을 요청하기 위한 모델.
 
@@ -26,10 +22,6 @@ class ImageConceptRequest(BaseModel):
     """
     concepts: list[str] = Field(default_factory=list)
 
-    images: list[str]
-
-
-# /score 요청용
 class ImageCategoryGroup(BaseModel):
     """
     카테고리별 이미지 묶음을 나타내는 모델.
@@ -42,7 +34,6 @@ class ImageCategoryGroup(BaseModel):
 
     category: str
     images: list[str]
-
 
 class CategoryScoreRequest(BaseModel):
     categories: list[ImageCategoryGroup]

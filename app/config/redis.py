@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 
 from redis.asyncio import Redis, ConnectionPool
+from redis.asyncio.retry import Retry
+from redis.backoff import ExponentialBackoff
+from redis.exceptions import ConnectionError, TimeoutError
 
 load_dotenv()
 
@@ -28,7 +31,15 @@ def init_redis() -> Redis:
         max_connections=100,
         decode_responses=True,
     )
-    _redis = Redis(connection_pool=pool)
+
+    retry_strategy = Retry(
+        backoff=ExponentialBackoff(base=1, cap=10), 
+        retries=5
+    )
+
+    _redis = Redis(connection_pool=pool, 
+                   retry=retry_strategy, 
+                   retry_on_error=[ConnectionError, TimeoutError])
     return _redis
 
 def get_redis() -> Redis:
