@@ -20,7 +20,7 @@ LOCAL_IMG_PATH_raw = os.getenv("LOCAL_IMG_PATH")
 
 # GCS
 GCS_BUCKET_NAME_raw = os.getenv("GCS_BUCKET_NAME")
-GCP_KEY_raw = os.getenv("GCP_KEY_PATH")
+GCP_KEY_raw = os.getenv("GCP_KEY")
 
 # S3
 S3_BUCKET_NAME_raw = os.getenv("S3_BUCKET_NAME")
