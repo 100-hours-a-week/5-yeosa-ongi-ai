@@ -5,6 +5,7 @@ import asyncio
 import httpx
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
+from loguru import logger
 
 import torch
 
@@ -77,9 +78,9 @@ class AppConfig:
         
         try:
             if await self.redis.ping():
-                print("Redis 연결 성공")
+                logger.info("Redis 연결 성공")
         except Exception as e:
-            print(f"Redis 연결 실패: {e}")
+            logger.error(f"Redis 연결 실패: {e}")
 
         gpu_server_base_url = os.getenv("GPU_SERVER_BASE_URL")
         if not gpu_server_base_url:
